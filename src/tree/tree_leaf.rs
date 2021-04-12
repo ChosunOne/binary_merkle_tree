@@ -3,8 +3,6 @@ use bincode::{deserialize, serialize};
 #[cfg(feature = "use_ron")]
 use ron;
 #[cfg(feature = "use_serde")]
-use serde::de::DeserializeOwned;
-#[cfg(feature = "use_serde")]
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "use_cbor")]
 use serde_cbor;
@@ -17,9 +15,9 @@ use serde_yaml;
 
 #[cfg(feature = "use_serialization")]
 use crate::merkle_bit::BinaryMerkleTreeResult;
-use crate::traits::Leaf;
+use crate::traits::{Leaf, Key};
 #[cfg(feature = "use_serialization")]
-use crate::traits::{Decode, Encode};
+use crate::traits::{Decode, Encode, SerdeHelper};
 
 /// Represents a leaf of the tree.  Holds a pointer to the location of the underlying `Data` node.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -27,9 +25,11 @@ use crate::traits::{Decode, Encode};
 pub struct TreeLeaf<const LENGTH: usize>
 {
     /// The associated key with this node.
-    key: [u8; LENGTH],
+    #[serde(with = "SerdeHelper")]
+    key: Key<LENGTH>,
     /// The location of the `Data` node in the tree.
-    data: [u8; LENGTH],
+    #[serde(with = "SerdeHelper")]
+    data: Key<LENGTH>,
 }
 
 impl<const LENGTH: usize> TreeLeaf<LENGTH>
@@ -45,27 +45,27 @@ impl<const LENGTH: usize> TreeLeaf<LENGTH>
     }
 
     /// Gets the associated key with the node.
-    fn get_key(&self) -> &[u8; LENGTH] {
+    fn get_key(&self) -> &Key<LENGTH> {
         &self.key
     }
 
     /// Gets the location of the `Data` node from this node.
-    fn get_data(&self) -> &[u8; LENGTH] {
+    fn get_data(&self) -> &Key<LENGTH> {
         &self.data
     }
 
     /// Sets the associated key with the node.
-    fn set_key(&mut self, key: [u8; LENGTH]) {
+    fn set_key(&mut self, key: Key<LENGTH>) {
         self.key = key;
     }
 
     /// Sets the location of the `Data` node.
-    fn set_data(&mut self, data: [u8; LENGTH]) {
+    fn set_data(&mut self, data: Key<LENGTH>) {
         self.data = data;
     }
 
     /// Decomposes the `TreeLeaf` into its constituent parts.
-    fn decompose(self) -> ([u8; LENGTH], [u8; LENGTH]) {
+    fn decompose(self) -> (Key<LENGTH>, Key<LENGTH>) {
         (self.key, self.data)
     }
 }
@@ -80,39 +80,37 @@ impl<const LENGTH: usize> Leaf<LENGTH> for TreeLeaf<LENGTH>
 
     /// Gets the associated key with this node.
     #[inline]
-    fn get_key(&self) -> &[u8; LENGTH] {
+    fn get_key(&self) -> &Key<LENGTH> {
         Self::get_key(self)
     }
 
     /// Gets the location of the `Data` node.
     #[inline]
-    fn get_data(&self) -> &[u8; LENGTH] {
+    fn get_data(&self) -> &Key<LENGTH> {
         Self::get_data(self)
     }
 
     /// Sets the associated key with this node.
     #[inline]
-    fn set_key(&mut self, key: [u8; LENGTH]) {
+    fn set_key(&mut self, key: Key<LENGTH>) {
         Self::set_key(self, key)
     }
 
     /// Sets the location for the `Data` node.
     #[inline]
-    fn set_data(&mut self, data: [u8; LENGTH]) {
+    fn set_data(&mut self, data: Key<LENGTH>) {
         Self::set_data(self, data)
     }
 
     /// Decomposes the struct into its constituent parts.
     #[inline]
-    fn decompose(self) -> ([u8; LENGTH], [u8; LENGTH]) {
+    fn decompose(self) -> (Key<LENGTH>, Key<LENGTH>) {
         Self::decompose(self)
     }
 }
 
 #[cfg(feature = "use_bincode")]
-impl<ArrayType> Encode for TreeLeaf<ArrayType>
-where
-    ArrayType: Array + Serialize,
+impl<const LENGTH: usize> Encode for TreeLeaf<LENGTH>
 {
     #[inline]
     fn encode(&self) -> BinaryMerkleTreeResult<Vec<u8>> {
@@ -121,9 +119,7 @@ where
 }
 
 #[cfg(feature = "use_json")]
-impl<ArrayType> Encode for TreeLeaf<ArrayType>
-where
-    ArrayType: Array + Serialize,
+impl<const LENGTH: usize> Encode for TreeLeaf<LENGTH>
 {
     #[inline]
     fn encode(&self) -> BinaryMerkleTreeResult<Vec<u8>> {
@@ -133,9 +129,7 @@ where
 }
 
 #[cfg(feature = "use_cbor")]
-impl<ArrayType> Encode for TreeLeaf<ArrayType>
-where
-    ArrayType: Array + Serialize,
+impl<const LENGTH: usize> Encode for TreeLeaf<LENGTH>
 {
     #[inline]
     fn encode(&self) -> BinaryMerkleTreeResult<Vec<u8>> {
@@ -144,9 +138,7 @@ where
 }
 
 #[cfg(feature = "use_yaml")]
-impl<ArrayType> Encode for TreeLeaf<ArrayType>
-where
-    ArrayType: Array + Serialize,
+impl<const LENGTH: usize> Encode for TreeLeaf<LENGTH>
 {
     #[inline]
     fn encode(&self) -> BinaryMerkleTreeResult<Vec<u8>> {
@@ -155,9 +147,7 @@ where
 }
 
 #[cfg(feature = "use_pickle")]
-impl<ArrayType> Encode for TreeLeaf<ArrayType>
-where
-    ArrayType: Array + Serialize,
+impl<const LENGTH: usize> Encode for TreeLeaf<LENGTH>
 {
     #[inline]
     fn encode(&self) -> BinaryMerkleTreeResult<Vec<u8>> {
@@ -166,9 +156,7 @@ where
 }
 
 #[cfg(feature = "use_ron")]
-impl<ArrayType> Encode for TreeLeaf<ArrayType>
-where
-    ArrayType: Array + Serialize,
+impl<const LENGTH: usize> Encode for TreeLeaf<LENGTH>
 {
     #[inline]
     fn encode(&self) -> BinaryMerkleTreeResult<Vec<u8>> {
@@ -177,9 +165,7 @@ where
 }
 
 #[cfg(feature = "use_bincode")]
-impl<ArrayType> Decode for TreeLeaf<ArrayType>
-where
-    ArrayType: Array + DeserializeOwned,
+impl<const LENGTH: usize> Decode for TreeLeaf<LENGTH>
 {
     #[inline]
     fn decode(buffer: &[u8]) -> BinaryMerkleTreeResult<Self> {
@@ -188,9 +174,7 @@ where
 }
 
 #[cfg(feature = "use_json")]
-impl<ArrayType> Decode for TreeLeaf<ArrayType>
-where
-    ArrayType: Array + DeserializeOwned,
+impl<const LENGTH: usize> Decode for TreeLeaf<LENGTH>
 {
     #[inline]
     fn decode(buffer: &[u8]) -> BinaryMerkleTreeResult<Self> {
@@ -201,9 +185,7 @@ where
 }
 
 #[cfg(feature = "use_cbor")]
-impl<ArrayType> Decode for TreeLeaf<ArrayType>
-where
-    ArrayType: Array + DeserializeOwned,
+impl<const LENGTH: usize> Decode for TreeLeaf<LENGTH>
 {
     #[inline]
     fn decode(buffer: &[u8]) -> BinaryMerkleTreeResult<Self> {
@@ -212,9 +194,7 @@ where
 }
 
 #[cfg(feature = "use_yaml")]
-impl<ArrayType> Decode for TreeLeaf<ArrayType>
-where
-    ArrayType: Array + DeserializeOwned,
+impl<const LENGTH: usize> Decode for TreeLeaf<LENGTH>
 {
     #[inline]
     fn decode(buffer: &[u8]) -> BinaryMerkleTreeResult<Self> {
@@ -223,9 +203,7 @@ where
 }
 
 #[cfg(feature = "use_pickle")]
-impl<ArrayType> Decode for TreeLeaf<ArrayType>
-where
-    ArrayType: Array + DeserializeOwned,
+impl<const LENGTH: usize> Decode for TreeLeaf<LENGTH>
 {
     #[inline]
     fn decode(buffer: &[u8]) -> BinaryMerkleTreeResult<Self> {
@@ -234,9 +212,7 @@ where
 }
 
 #[cfg(feature = "use_ron")]
-impl<ArrayType> Decode for TreeLeaf<ArrayType>
-where
-    ArrayType: Array + DeserializeOwned,
+impl<const LENGTH: usize> Decode for TreeLeaf<LENGTH>
 {
     #[inline]
     fn decode(buffer: &[u8]) -> BinaryMerkleTreeResult<Self> {

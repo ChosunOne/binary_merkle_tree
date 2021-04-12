@@ -8,9 +8,7 @@ use std::path::PathBuf;
 #[cfg(feature = "use_hashbrown")]
 use hashbrown::HashMap;
 
-use crate::traits::{
-    Branch, Data, Database, Decode, Encode, Exception, Hasher, Leaf, Node, NodeVariant,
-};
+use crate::traits::{Branch, Data, Database, Decode, Encode, Exception, Hasher, Leaf, Node, NodeVariant, Key};
 use crate::utils::tree_cell::TreeCell;
 use crate::utils::tree_ref::TreeRef;
 use crate::utils::tree_utils::{
@@ -131,9 +129,9 @@ where
     #[inline]
     pub fn get(
         &self,
-        root_hash: &[u8; LENGTH],
-        keys: &mut [[u8; LENGTH]],
-    ) -> BinaryMerkleTreeResult<HashMap<[u8; LENGTH], Option<ValueType>>> {
+        root_hash: &Key<LENGTH>,
+        keys: &mut [Key<LENGTH>],
+    ) -> BinaryMerkleTreeResult<HashMap<Key<LENGTH>, Option<ValueType>>> {
         if keys.is_empty() {
             return Ok(HashMap::new());
         }
@@ -225,11 +223,6 @@ where
                         "Corrupt merkle tree: Found data node while traversing tree",
                     ));
                 }
-                NodeVariant::Phantom(_) => {
-                    return Err(Exception::new(
-                        "Corrupt merkle tree: Found phantom node while traversing tree",
-                    ));
-                }
             }
         }
 
@@ -242,10 +235,10 @@ where
     #[inline]
     pub fn insert(
         &mut self,
-        previous_root: Option<&[u8; LENGTH]>,
-        keys: &mut [[u8; LENGTH]],
+        previous_root: Option<&Key<LENGTH>>,
+        keys: &mut [Key<LENGTH>],
         values: &[ValueType],
-    ) -> BinaryMerkleTreeResult<[u8; LENGTH]> {
+    ) -> BinaryMerkleTreeResult<Key<LENGTH>> {
         if keys.len() != values.len() {
             return Err(Exception::new("Keys and values have different lengths"));
         }
@@ -285,9 +278,9 @@ where
     /// `Exception` generated when an invalid state is encountered during tree traversal.
     fn generate_treerefs(
         &mut self,
-        root: &[u8; LENGTH],
-        keys: &mut [[u8; LENGTH]],
-        key_map: &HashMap<[u8; LENGTH], [u8; LENGTH]>,
+        root: &Key<LENGTH>,
+        keys: &mut [Key<LENGTH>],
+        key_map: &HashMap<Key<LENGTH>, Key<LENGTH>>,
     ) -> BinaryMerkleTreeResult<Vec<TreeRef<LENGTH>>> {
         // Nodes that form the merkle proof for the new tree
         let mut proof_nodes = Vec::with_capacity(keys.len());
@@ -351,11 +344,6 @@ where
                         "Corrupt merkle tree: Found data node while traversing tree",
                     ));
                 }
-                NodeVariant::Phantom(_) => {
-                    return Err(Exception::new(
-                        "Corrupt merkle tree: Found phantom node while traversing tree",
-                    ));
-                }
             }
 
             let (branch_count, branch_zero, branch_one, branch_split_index, branch_key) =
@@ -417,8 +405,8 @@ where
     fn split_nodes<'a>(
         &mut self,
         depth: usize,
-        branch: [u8; LENGTH],
-        node_list: &'a [[u8; LENGTH]],
+        branch: Key<LENGTH>,
+        node_list: &'a [Key<LENGTH>],
     ) -> Result<SplitNodeType<'a, BranchType, LeafType, DataType, NodeType, LENGTH>, Exception>
     {
         if let Some(node) = self.db.get_node(branch)? {
@@ -443,11 +431,6 @@ where
                             "Corrupt merkle tree: Found data node while traversing tree",
                         ));
                     }
-                    NodeVariant::Phantom(_) => {
-                        return Err(Exception::new(
-                            "Corrupt merkle tree: Found phantom node while traversing tree",
-                        ));
-                    }
                 }
                 new_node.set_references(refs);
                 self.db.insert(branch, new_node)?;
@@ -470,9 +453,9 @@ where
     /// Updates reference count if a leaf already exists.
     fn insert_leaves(
         &mut self,
-        keys: &[[u8; LENGTH]],
-        values: &HashMap<[u8; LENGTH], &ValueType>,
-    ) -> BinaryMerkleTreeResult<Vec<[u8; LENGTH]>> {
+        keys: &[Key<LENGTH>],
+        values: &HashMap<Key<LENGTH>, &ValueType>,
+    ) -> BinaryMerkleTreeResult<Vec<Key<LENGTH>>> {
         let mut nodes = Vec::with_capacity(keys.len());
         for k in keys.iter() {
             let key = k.as_ref();
@@ -529,7 +512,7 @@ where
     fn create_tree(
         &mut self,
         mut tree_refs: Vec<TreeRef<LENGTH>>,
-    ) -> BinaryMerkleTreeResult<[u8; LENGTH]> {
+    ) -> BinaryMerkleTreeResult<Key<LENGTH>> {
         if tree_refs.is_empty() {
             return Err(Exception::new("tree_refs should not be empty!"))
         }
@@ -568,7 +551,7 @@ where
         &mut self,
         tree_refs: &mut Vec<TreeRef<LENGTH>>,
         level: Vec<(usize, usize, usize)>,
-    ) -> BinaryMerkleTreeResult<Option<[u8; LENGTH]>> {
+    ) -> BinaryMerkleTreeResult<Option<Key<LENGTH>>> {
         let mut root = [0; LENGTH];
         for (split_index, tree_ref_pointer, next_tree_ref_pointer) in level {
             let mut branch = BranchType::new();
@@ -639,7 +622,7 @@ where
     /// # Errors
     /// `Exception` generated when an invalid state is encountered during tree traversal.
     #[inline]
-    pub fn remove(&mut self, root_hash: &[u8; LENGTH]) -> BinaryMerkleTreeResult<()> {
+    pub fn remove(&mut self, root_hash: &Key<LENGTH>) -> BinaryMerkleTreeResult<()> {
         let mut nodes = VecDeque::with_capacity(128);
         nodes.push_front(*root_hash);
 
@@ -691,11 +674,6 @@ where
                     }
                     new_node = NodeType::new(NodeVariant::Data(d))
                 }
-                NodeVariant::Phantom(_) => {
-                    return Err(Exception::new(
-                        "Corrupt merkle tree: Found phantom node while traversing tree",
-                    ));
-                }
             }
 
             new_node.set_references(refs);
@@ -713,9 +691,9 @@ where
     #[inline]
     pub fn generate_inclusion_proof(
         &self,
-        root: &[u8; LENGTH],
-        key: [u8; LENGTH],
-    ) -> BinaryMerkleTreeResult<Vec<([u8; LENGTH], bool)>> {
+        root: &Key<LENGTH>,
+        key: Key<LENGTH>,
+    ) -> BinaryMerkleTreeResult<Vec<(Key<LENGTH>, bool)>> {
         let mut nodes = VecDeque::with_capacity(self.depth);
         nodes.push_front(*root);
 
@@ -783,11 +761,6 @@ where
 
                         proof.push((data_node_location, false));
                     }
-                    NodeVariant::Phantom(_) => {
-                        return Err(Exception::new(
-                            "Corrupt merkle tree: Found phantom node while traversing tree",
-                        ));
-                    }
                 }
             } else {
                 return Err(Exception::new("Failed to find node"));
@@ -804,10 +777,10 @@ where
     /// `Exception` generated when the given proof is invalid.
     #[inline]
     pub fn verify_inclusion_proof(
-        root: &[u8; LENGTH],
-        key: [u8; LENGTH],
+        root: &Key<LENGTH>,
+        key: Key<LENGTH>,
         value: &ValueType,
-        proof: &[([u8; LENGTH], bool)],
+        proof: &[(Key<LENGTH>, bool)],
     ) -> BinaryMerkleTreeResult<()> {
         if proof.len() < 2 {
             return Err(Exception::new("Proof is too short to be valid"));
@@ -864,8 +837,8 @@ where
     #[inline]
     pub fn get_one(
         &self,
-        root: &[u8; LENGTH],
-        key: &[u8; LENGTH],
+        root: &Key<LENGTH>,
+        key: &Key<LENGTH>,
     ) -> BinaryMerkleTreeResult<Option<ValueType>> {
         let mut nodes = VecDeque::with_capacity(3);
         nodes.push_front(*root);
@@ -922,11 +895,6 @@ where
                         let value = ValueType::decode(buffer)?;
                         return Ok(Some(value));
                     }
-                    NodeVariant::Phantom(_) => {
-                        return Err(Exception::new(
-                            "Corrupt merkle tree: Found phantom node while traversing tree",
-                        ));
-                    }
                 }
             }
         }
@@ -939,10 +907,10 @@ where
     #[inline]
     pub fn insert_one(
         &mut self,
-        previous_root: Option<&[u8; LENGTH]>,
-        key: &[u8; LENGTH],
+        previous_root: Option<&Key<LENGTH>>,
+        key: &Key<LENGTH>,
         value: &ValueType,
-    ) -> BinaryMerkleTreeResult<[u8; LENGTH]> {
+    ) -> BinaryMerkleTreeResult<Key<LENGTH>> {
         let mut value_map = HashMap::new();
         value_map.insert(*key, value);
 

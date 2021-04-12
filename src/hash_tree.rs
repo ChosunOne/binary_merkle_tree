@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use hashbrown::HashMap;
 
 use crate::merkle_bit::{BinaryMerkleTreeResult, MerkleBIT};
-use crate::traits::{Decode, Encode};
+use crate::traits::{Decode, Encode, Key};
 use crate::tree::tree_branch::TreeBranch;
 use crate::tree::tree_data::TreeData;
 use crate::tree::tree_leaf::TreeLeaf;
@@ -66,9 +66,9 @@ where
     #[inline]
     pub fn get(
         &self,
-        root_hash: &[u8; LENGTH],
-        keys: &mut [[u8; LENGTH]],
-    ) -> BinaryMerkleTreeResult<HashMap<[u8; LENGTH], Option<ValueType>>> {
+        root_hash: &Key<LENGTH>,
+        keys: &mut [Key<LENGTH>],
+    ) -> BinaryMerkleTreeResult<HashMap<Key<LENGTH>, Option<ValueType>>> {
         self.tree.get(root_hash, keys)
     }
 
@@ -79,10 +79,10 @@ where
     #[inline]
     pub fn insert(
         &mut self,
-        previous_root: Option<&[u8; LENGTH]>,
-        keys: &mut [[u8; LENGTH]],
+        previous_root: Option<&Key<LENGTH>>,
+        keys: &mut [Key<LENGTH>],
         values: &[ValueType],
-    ) -> BinaryMerkleTreeResult<[u8; LENGTH]> {
+    ) -> BinaryMerkleTreeResult<Key<LENGTH>> {
         self.tree.insert(previous_root, keys, values)
     }
 
@@ -91,7 +91,7 @@ where
     /// # Errors
     /// `Exception` generated if the `remove` encounters an invalid state during tree traversal.
     #[inline]
-    pub fn remove(&mut self, root_hash: &[u8; LENGTH]) -> BinaryMerkleTreeResult<()> {
+    pub fn remove(&mut self, root_hash: &Key<LENGTH>) -> BinaryMerkleTreeResult<()> {
         self.tree.remove(root_hash)
     }
 
@@ -101,9 +101,9 @@ where
     #[inline]
     pub fn generate_inclusion_proof(
         &self,
-        root: &[u8; LENGTH],
-        key: [u8; LENGTH],
-    ) -> BinaryMerkleTreeResult<Vec<([u8; LENGTH], bool)>> {
+        root: &Key<LENGTH>,
+        key: Key<LENGTH>,
+    ) -> BinaryMerkleTreeResult<Vec<(Key<LENGTH>, bool)>> {
         self.tree.generate_inclusion_proof(root, key)
     }
 
@@ -112,10 +112,10 @@ where
     /// `Exception` generated if the given proof is invalid.
     #[inline]
     pub fn verify_inclusion_proof(
-        root: &[u8; LENGTH],
-        key: [u8; LENGTH],
+        root: &Key<LENGTH>,
+        key: Key<LENGTH>,
         value: &ValueType,
-        proof: &[([u8; LENGTH], bool)],
+        proof: &[(Key<LENGTH>, bool)],
     ) -> BinaryMerkleTreeResult<()> {
         Tree::verify_inclusion_proof(root, key, value, proof)
     }
@@ -126,8 +126,8 @@ where
     #[inline]
     pub fn get_one(
         &self,
-        root: &[u8; LENGTH],
-        key: &[u8; LENGTH],
+        root: &Key<LENGTH>,
+        key: &Key<LENGTH>,
     ) -> BinaryMerkleTreeResult<Option<ValueType>> {
         self.tree.get_one(root, key)
     }
@@ -138,10 +138,10 @@ where
     #[inline]
     pub fn insert_one(
         &mut self,
-        previous_root: Option<&[u8; LENGTH]>,
-        key: &[u8; LENGTH],
+        previous_root: Option<&Key<LENGTH>>,
+        key: &Key<LENGTH>,
         value: &ValueType,
-    ) -> BinaryMerkleTreeResult<[u8; LENGTH]> {
+    ) -> BinaryMerkleTreeResult<Key<LENGTH>> {
         self.tree.insert_one(previous_root, key, value)
     }
 }

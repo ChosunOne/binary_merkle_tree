@@ -8,10 +8,13 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "use_digest")]
 use digest::Digest;
 
-use std::convert::Infallible;
-use std::hash::Hash;
+use std::convert::{Infallible, TryFrom};
 use std::marker::PhantomData;
 use std::num::TryFromIntError;
+use serde::{Serializer, Deserializer};
+use serde::ser::SerializeTuple;
+use serde::de::{Visitor, SeqAccess, Error as SerdeError};
+use std::fmt;
 
 /// The required interface for structs representing a hasher.
 pub trait Hasher<const LENGTH: usize>
@@ -23,7 +26,7 @@ pub trait Hasher<const LENGTH: usize>
     /// Adds data to be hashed.
     fn update(&mut self, data: &[u8]);
     /// Outputs the hash from updated data.
-    fn finalize(self) -> [u8; LENGTH];
+    fn finalize(self) -> Key<LENGTH>;
 }
 
 #[cfg(feature = "use_digest")]
@@ -41,7 +44,7 @@ where
         self.update(data);
     }
 
-    fn finalize(self) -> [u8; LENGTH] {
+    fn finalize(self) -> Key<LENGTH> {
         let mut finalized = ArrayType::default();
         let result = self.finalize();
         let mut size = finalized.as_ref().len();
@@ -61,25 +64,25 @@ pub trait Branch<const LENGTH: usize>
     /// Gets the count of leaves beneath this node.
     fn get_count(&self) -> u64;
     /// Gets the location of the zero branch beneath this node.
-    fn get_zero(&self) -> &[u8; LENGTH];
+    fn get_zero(&self) -> &Key<LENGTH>;
     /// Gets the location of the one branch beneath this node.
-    fn get_one(&self) -> &[u8; LENGTH];
+    fn get_one(&self) -> &Key<LENGTH>;
     /// Gets the index on which to split keys when traversing this node.
     fn get_split_index(&self) -> usize;
     /// Gets the associated key with this node.
-    fn get_key(&self) -> &[u8; LENGTH];
+    fn get_key(&self) -> &Key<LENGTH>;
     /// Sets the count of leaves below this node.
     fn set_count(&mut self, count: u64);
     /// Sets the location of the zero branch beneath this node.
-    fn set_zero(&mut self, zero: [u8; LENGTH]);
+    fn set_zero(&mut self, zero: Key<LENGTH>);
     /// Sets the location of the one branch beneath this node..
-    fn set_one(&mut self, one: [u8; LENGTH]);
+    fn set_one(&mut self, one: Key<LENGTH>);
     /// Sets the index on which to split keys when traversing this node.
     fn set_split_index(&mut self, index: usize);
     /// Sets the associated key for this node.
-    fn set_key(&mut self, key: [u8; LENGTH]);
+    fn set_key(&mut self, key: Key<LENGTH>);
     /// Decomposes the `Branch` into its constituent parts.
-    fn decompose(self) -> (u64, [u8; LENGTH], [u8; LENGTH], usize, [u8; LENGTH]);
+    fn decompose(self) -> (u64, Key<LENGTH>, Key<LENGTH>, usize, Key<LENGTH>);
 }
 
 /// The required interface for structs representing leaves in the tree.
@@ -88,15 +91,15 @@ pub trait Leaf<const LENGTH: usize>
     /// Creates a new `Leaf` node.
     fn new() -> Self;
     /// Gets the associated key with this node.
-    fn get_key(&self) -> &[u8; LENGTH];
+    fn get_key(&self) -> &Key<LENGTH>;
     /// Gets the location of the `Data` node.
-    fn get_data(&self) -> &[u8; LENGTH];
+    fn get_data(&self) -> &Key<LENGTH>;
     /// Sets the associated key with this node.
-    fn set_key(&mut self, key: [u8; LENGTH]);
+    fn set_key(&mut self, key: Key<LENGTH>);
     /// Sets the location of the `Data` node.
-    fn set_data(&mut self, data: [u8; LENGTH]);
+    fn set_data(&mut self, data: Key<LENGTH>);
     /// Decomposes the `Leaf` into its constituent parts.
-    fn decompose(self) -> ([u8; LENGTH], [u8; LENGTH]);
+    fn decompose(self) -> (Key<LENGTH>, Key<LENGTH>);
 }
 
 /// The required interface for structs representing data stored in the tree.
@@ -126,7 +129,7 @@ where
     fn set_references(&mut self, references: u64);
     /// Sets the node to contain a `Branch` node.  Mutually exclusive with `set_data` and `set_leaf`.
     fn set_branch(&mut self, branch: BranchType);
-    /// Sets the node to contain a `Leaf` node.  Mututally exclusive with `set_data` and `set_branch`.
+    /// Sets the node to contain a `Leaf` node.  Mutually exclusive with `set_data` and `set_branch`.
     fn set_leaf(&mut self, leaf: LeafType);
     /// Sets the node to contain a `Data` node.  Mutually exclusive with `set_leaf` and `set_branch`.
     fn set_data(&mut self, data: DataType);
@@ -146,9 +149,7 @@ where
     /// Variant containing a `Leaf` node.
     Leaf(LeafType),
     /// Variant containing a `Data` node.
-    Data(DataType),
-    /// Marker for `KeyType`.
-    Phantom(PhantomData<[u8; LENGTH]>),
+    Data(DataType)
 }
 
 /// This trait defines the required interface for connecting a storage mechanism to the `MerkleBIT`.
@@ -167,15 +168,15 @@ pub trait Database<const LENGTH: usize>
     /// Gets a value from the database based on the given key.
     /// # Errors
     /// `Exception` generated if the `get_node` does not succeed.
-    fn get_node(&self, key: [u8; LENGTH]) -> Result<Option<Self::NodeType>, Exception>;
+    fn get_node(&self, key: Key<LENGTH>) -> Result<Option<Self::NodeType>, Exception>;
     /// Queues a key and its associated value for insertion to the database.
     /// # Errors
     /// `Exception` generated if the `insert` does not succeed.
-    fn insert(&mut self, key: [u8; LENGTH], node: Self::NodeType) -> Result<(), Exception>;
+    fn insert(&mut self, key: Key<LENGTH>, node: Self::NodeType) -> Result<(), Exception>;
     /// Removes a key and its associated value from the database.
     /// # Errors
     /// `Exception` generated if the `remove` does not succeed.
-    fn remove(&mut self, key: &[u8; LENGTH]) -> Result<(), Exception>;
+    fn remove(&mut self, key: &Key<LENGTH>) -> Result<(), Exception>;
     /// Confirms previous inserts and writes the changes to the database.
     /// # Errors
     /// `Exception` generated if the `batch_write` does not succeed.
@@ -194,6 +195,79 @@ impl Encode for Vec<u8> {
     #[inline]
     fn encode(&self) -> Result<Self, Exception> {
         Ok(self.clone())
+    }
+}
+
+pub type Key<const LENGTH: usize> = [u8; LENGTH];
+
+impl<const LENGTH: usize> Encode for Key<LENGTH> {
+    fn encode(&self) -> Result<Vec<u8>, Exception> {
+        Ok(self.to_vec())
+    }
+}
+
+impl<const LENGTH: usize> Decode for Key<LENGTH> {
+    fn decode(buffer: &[u8]) -> Result<Self, Exception> where
+        Self: Sized {
+        return if buffer.len() > LENGTH {
+            let mut buf = [0u8; LENGTH];
+            buf.copy_from_slice(&buffer[..LENGTH]);
+            Ok(buf)
+        } else {
+            let buf: [u8; LENGTH] = match <[u8; LENGTH]>::try_from(buffer) {
+                Ok(b) => b,
+                Err(_) => return Err(Exception::new(format!("Failed to convert buffer to length {} array", LENGTH).as_str()))
+            };
+            Ok(buf)
+        }
+    }
+}
+
+pub trait SerdeHelper {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where S: Serializer;
+    fn deserialize<'de, D>(deserializer: D) -> Result<Self, D::Error>
+        where D: Deserializer<'de>, Self: Sized;
+}
+
+impl<const LENGTH: usize> SerdeHelper for Key<LENGTH> {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error> where S: Serializer {
+        let mut seq = serializer.serialize_tuple(self.len())?;
+        for elem in &self[..] {
+            seq.serialize_element(elem)?;
+        }
+        seq.end()
+    }
+
+    fn deserialize<'de, D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error> where D: Deserializer<'de>, Self: Sized {
+        let visitor = ArrayVisitor { element: PhantomData, length: PhantomData };
+        deserializer.deserialize_tuple(LENGTH, visitor)
+    }
+}
+
+struct ArrayVisitor<T, const LENGTH: usize> {
+    element: PhantomData<T>,
+    length: PhantomData<[usize; LENGTH]>
+}
+
+impl<'de, T, const LENGTH: usize> Visitor<'de> for ArrayVisitor<T, LENGTH>
+    where T: Default + Copy + Deserialize<'de>
+{
+    type Value = [T; LENGTH];
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str(&format!("an array of length {}", LENGTH))
+    }
+
+    fn visit_seq<A>(self, mut seq: A) -> Result<[T; LENGTH], A::Error>
+        where A: SeqAccess<'de>
+    {
+        let mut arr = [T::default(); LENGTH];
+        for i in 0..LENGTH {
+            arr[i] = seq.next_element()?
+                .ok_or_else(|| SerdeError::invalid_length(i, &self))?;
+        }
+        Ok(arr)
     }
 }
 

@@ -6,7 +6,7 @@ use hashbrown::HashMap;
 
 use crate::constants::{KEY_LEN_BITS, MULTIPLY_DE_BRUIJN_BIT_POSITION};
 use crate::merkle_bit::BinaryMerkleTreeResult;
-use crate::traits::Exception;
+use crate::traits::{Exception, Key};
 use crate::utils::tree_ref::TreeRef;
 use std::convert::TryFrom;
 
@@ -19,7 +19,7 @@ use std::collections::HashSet;
 /// # Errors
 /// `Exception` generated from a failure to convert an `u8` to an `usize`
 #[inline]
-pub fn choose_zero<const LENGTH: usize>(key_array: [u8; LENGTH], bit: usize) -> Result<bool, Exception>
+pub fn choose_zero<const LENGTH: usize>(key_array: Key<LENGTH>, bit: usize) -> Result<bool, Exception>
 {
     let key = key_array.as_ref();
     let index = bit >> 3;
@@ -34,9 +34,9 @@ pub fn choose_zero<const LENGTH: usize>(key_array: [u8; LENGTH], bit: usize) -> 
 /// `Exception` generated from a failure to convert an `u8` to an `usize`
 #[inline]
 pub fn split_pairs<const LENGTH: usize>(
-    sorted_pairs: &[[u8; LENGTH]],
+    sorted_pairs: &[Key<LENGTH>],
     bit: usize,
-) -> Result<(&[[u8; LENGTH]], &[[u8; LENGTH]]), Exception>
+) -> Result<(&[Key<LENGTH>], &[Key<LENGTH>]), Exception>
 {
     if sorted_pairs.is_empty() {
         return Ok((&[], &[]));
@@ -70,11 +70,11 @@ pub fn split_pairs<const LENGTH: usize>(
 /// `Exception` generated from a failure to convert an `u8` to an `usize`
 #[inline]
 pub fn check_descendants<'a, const LENGTH: usize>(
-    keys: &'a [[u8; LENGTH]],
+    keys: &'a [Key<LENGTH>],
     branch_split_index: usize,
-    branch_key: &[u8; LENGTH],
+    branch_key: &Key<LENGTH>,
     min_split_index: usize,
-) -> Result<&'a [[u8; LENGTH]], Exception>
+) -> Result<&'a [Key<LENGTH>], Exception>
 {
     let b_key = branch_key.as_ref();
     let mut start = 0;
@@ -117,8 +117,8 @@ pub fn check_descendants<'a, const LENGTH: usize>(
 /// May return an `Exception` if the supplied `keys` is empty.
 #[inline]
 pub fn calc_min_split_index<const LENGTH: usize>(
-    keys: &[[u8; LENGTH]],
-    branch_key: &[u8; LENGTH],
+    keys: &[Key<LENGTH>],
+    branch_key: &Key<LENGTH>,
 ) -> Result<usize, Exception>
 {
     if keys.is_empty() {
@@ -160,8 +160,8 @@ pub fn calc_min_split_index<const LENGTH: usize>(
 /// to `None`.
 #[inline]
 pub fn generate_leaf_map<ValueType, const LENGTH: usize>(
-    keys: &[[u8; LENGTH]],
-) -> HashMap<[u8; LENGTH], Option<ValueType>>
+    keys: &[Key<LENGTH>],
+) -> HashMap<Key<LENGTH>, Option<ValueType>>
 {
     let mut leaf_map = HashMap::new();
     for &key in keys.iter() {

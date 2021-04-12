@@ -3,8 +3,6 @@ use bincode::{deserialize, serialize};
 #[cfg(feature = "use_ron")]
 use ron;
 #[cfg(feature = "use_serde")]
-use serde::de::DeserializeOwned;
-#[cfg(feature = "use_serde")]
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "use_cbor")]
 use serde_cbor;
@@ -116,9 +114,7 @@ impl<const LENGTH: usize> Node<TreeBranch<LENGTH>, TreeLeaf<LENGTH>, TreeData, L
 }
 
 #[cfg(feature = "use_bincode")]
-impl<ArrayType> Encode for TreeNode<ArrayType>
-where
-    ArrayType: Array + Serialize,
+impl<const LENGTH: usize> Encode for TreeNode<LENGTH>
 {
     #[inline]
     fn encode(&self) -> BinaryMerkleTreeResult<Vec<u8>> {
@@ -127,9 +123,7 @@ where
 }
 
 #[cfg(feature = "use_json")]
-impl<ArrayType> Encode for TreeNode<ArrayType>
-where
-    ArrayType: Array + Serialize,
+impl<const LENGTH: usize> Encode for TreeNode<LENGTH>
 {
     #[inline]
     fn encode(&self) -> BinaryMerkleTreeResult<Vec<u8>> {
@@ -139,9 +133,7 @@ where
 }
 
 #[cfg(feature = "use_cbor")]
-impl<ArrayType> Encode for TreeNode<ArrayType>
-where
-    ArrayType: Array + Serialize,
+impl<const LENGTH: usize> Encode for TreeNode<LENGTH>
 {
     #[inline]
     fn encode(&self) -> BinaryMerkleTreeResult<Vec<u8>> {
@@ -150,9 +142,7 @@ where
 }
 
 #[cfg(feature = "use_yaml")]
-impl<ArrayType> Encode for TreeNode<ArrayType>
-where
-    ArrayType: Array + Serialize,
+impl<const LENGTH: usize> Encode for TreeNode<LENGTH>
 {
     #[inline]
     fn encode(&self) -> BinaryMerkleTreeResult<Vec<u8>> {
@@ -161,9 +151,7 @@ where
 }
 
 #[cfg(feature = "use_pickle")]
-impl<ArrayType> Encode for TreeNode<ArrayType>
-where
-    ArrayType: Array + Serialize,
+impl<const LENGTH: usize> Encode for TreeNode<LENGTH>
 {
     #[inline]
     fn encode(&self) -> BinaryMerkleTreeResult<Vec<u8>> {
@@ -172,9 +160,7 @@ where
 }
 
 #[cfg(feature = "use_ron")]
-impl<ArrayType> Encode for TreeNode<ArrayType>
-where
-    ArrayType: Array + Serialize,
+impl<const LENGTH: usize> Encode for TreeNode<LENGTH>
 {
     #[inline]
     fn encode(&self) -> BinaryMerkleTreeResult<Vec<u8>> {
@@ -183,9 +169,7 @@ where
 }
 
 #[cfg(feature = "use_bincode")]
-impl<ArrayType> Decode for TreeNode<ArrayType>
-where
-    ArrayType: Array + DeserializeOwned,
+impl<const LENGTH: usize> Decode for TreeNode<LENGTH>
 {
     #[inline]
     fn decode(buffer: &[u8]) -> BinaryMerkleTreeResult<Self> {
@@ -194,9 +178,7 @@ where
 }
 
 #[cfg(feature = "use_json")]
-impl<ArrayType> Decode for TreeNode<ArrayType>
-where
-    ArrayType: Array + DeserializeOwned,
+impl<const LENGTH: usize> Decode for TreeNode<LENGTH>
 {
     #[inline]
     fn decode(buffer: &[u8]) -> BinaryMerkleTreeResult<Self> {
@@ -207,9 +189,7 @@ where
 }
 
 #[cfg(feature = "use_cbor")]
-impl<ArrayType> Decode for TreeNode<ArrayType>
-where
-    ArrayType: Array + DeserializeOwned,
+impl<const LENGTH: usize> Decode for TreeNode<LENGTH>
 {
     #[inline]
     fn decode(buffer: &[u8]) -> BinaryMerkleTreeResult<Self> {
@@ -218,9 +198,7 @@ where
 }
 
 #[cfg(feature = "use_yaml")]
-impl<ArrayType> Decode for TreeNode<ArrayType>
-where
-    ArrayType: Array + DeserializeOwned,
+impl<const LENGTH: usize> Decode for TreeNode<LENGTH>
 {
     #[inline]
     fn decode(buffer: &[u8]) -> BinaryMerkleTreeResult<Self> {
@@ -229,9 +207,7 @@ where
 }
 
 #[cfg(feature = "use_pickle")]
-impl<ArrayType> Decode for TreeNode<ArrayType>
-where
-    ArrayType: Array + DeserializeOwned,
+impl<const LENGTH: usize> Decode for TreeNode<LENGTH>
 {
     #[inline]
     fn decode(buffer: &[u8]) -> BinaryMerkleTreeResult<Self> {
@@ -240,9 +216,7 @@ where
 }
 
 #[cfg(feature = "use_ron")]
-impl<ArrayType> Decode for TreeNode<ArrayType>
-where
-    ArrayType: Array + DeserializeOwned,
+impl<const LENGTH: usize> Decode for TreeNode<LENGTH>
 {
     #[inline]
     fn decode(buffer: &[u8]) -> BinaryMerkleTreeResult<Self> {

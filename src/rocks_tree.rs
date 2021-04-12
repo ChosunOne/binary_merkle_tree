@@ -30,17 +30,15 @@ type Tree<ArrayType, ValueType> = MerkleBIT<
     ArrayType,
 >;
 
-pub struct RocksTree<ArrayType = [u8; 32], ValueType = Vec<u8>>
+pub struct RocksTree<ValueType, const LENGTH: usize>
 where
-    ArrayType: Array + Serialize + DeserializeOwned,
     ValueType: Encode + Decode,
 {
-    tree: Tree<ArrayType, ValueType>,
+    tree: Tree<ValueType, LENGTH>,
 }
 
-impl<ArrayType, ValueType> RocksTree<ArrayType, ValueType>
+impl<ValueType, const LENGTH: usize> RocksTree<ValueType, LENGTH>
 where
-    ArrayType: Array + Serialize + DeserializeOwned,
     ValueType: Encode + Decode,
 {
     #[inline]
@@ -51,7 +49,7 @@ where
     }
 
     #[inline]
-    pub fn from_db(db: RocksDB<ArrayType>, depth: usize) -> BinaryMerkleTreeResult<Self> {
+    pub fn from_db(db: RocksDB<LENGTH>, depth: usize) -> BinaryMerkleTreeResult<Self> {
         let tree = MerkleBIT::from_db(db, depth)?;
         Ok(Self { tree })
     }
@@ -59,17 +57,17 @@ where
     #[inline]
     pub fn get(
         &self,
-        root_hash: &ArrayType,
-        keys: &mut [ArrayType],
-    ) -> BinaryMerkleTreeResult<HashMap<ArrayType, Option<ValueType>>> {
+        root_hash: &[u8; LENGTH],
+        keys: &mut [[u8; LENGTH]],
+    ) -> BinaryMerkleTreeResult<HashMap<[u8; LENGTH], Option<ValueType>>> {
         self.tree.get(root_hash, keys)
     }
 
     #[inline]
     pub fn get_one(
         &self,
-        root: &ArrayType,
-        key: &ArrayType,
+        root: &[u8; LENGTH],
+        key: &[u8; LENGTH],
     ) -> BinaryMerkleTreeResult<Option<ValueType>> {
         self.tree.get_one(&root, &key)
     }
@@ -77,43 +75,43 @@ where
     #[inline]
     pub fn insert(
         &mut self,
-        previous_root: Option<&ArrayType>,
-        keys: &mut [ArrayType],
+        previous_root: Option<&[u8; LENGTH]>,
+        keys: &mut [[u8; LENGTH]],
         values: &[ValueType],
-    ) -> BinaryMerkleTreeResult<ArrayType> {
+    ) -> BinaryMerkleTreeResult<[u8; LENGTH]> {
         self.tree.insert(previous_root, keys, values)
     }
 
     #[inline]
     pub fn insert_one(
         &mut self,
-        previous_root: Option<&ArrayType>,
-        key: &ArrayType,
+        previous_root: Option<&[u8; LENGTH]>,
+        key: &[u8; LENGTH],
         value: &ValueType,
-    ) -> BinaryMerkleTreeResult<ArrayType> {
+    ) -> BinaryMerkleTreeResult<[u8; LENGTH]> {
         self.tree.insert_one(previous_root, key, value)
     }
 
     #[inline]
-    pub fn remove(&mut self, root_hash: &ArrayType) -> BinaryMerkleTreeResult<()> {
+    pub fn remove(&mut self, root_hash: &[u8; LENGTH]) -> BinaryMerkleTreeResult<()> {
         self.tree.remove(root_hash)
     }
 
     #[inline]
     pub fn generate_inclusion_proof(
         &self,
-        root: &ArrayType,
-        key: ArrayType,
-    ) -> BinaryMerkleTreeResult<Vec<(ArrayType, bool)>> {
+        root: &[u8; LENGTH],
+        key: [u8; LENGTH],
+    ) -> BinaryMerkleTreeResult<Vec<([u8; LENGTH], bool)>> {
         self.tree.generate_inclusion_proof(root, key)
     }
 
     #[inline]
     pub fn verify_inclusion_proof(
-        root: &ArrayType,
-        key: ArrayType,
+        root: &[u8; LENGTH],
+        key: [u8; LENGTH],
         value: &ValueType,
-        proof: &Vec<(ArrayType, bool)>,
+        proof: &Vec<([u8; LENGTH], bool)>,
     ) -> BinaryMerkleTreeResult<()> {
         Tree::verify_inclusion_proof(root, key, value, proof)
     }

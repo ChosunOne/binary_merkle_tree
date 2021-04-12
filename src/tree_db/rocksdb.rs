@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use rocksdb::{WriteBatch, DB};
 
-use crate::traits::{Array, Database, Decode, Encode, Exception};
+use crate::traits::{Database, Decode, Encode, Exception, Key};
 use crate::tree::tree_node::TreeNode;
 use std::marker::PhantomData;
 
@@ -14,35 +14,28 @@ impl From<rocksdb::Error> for Exception {
     }
 }
 
-pub struct RocksDB<ArrayType>
-where
-    ArrayType: Array,
+pub struct RocksDB
 {
     db: DB,
-    pending_inserts: Option<WriteBatch>,
-    array: PhantomData<ArrayType>,
+    pending_inserts: Option<WriteBatch>
 }
 
-impl<ArrayType> RocksDB<ArrayType>
-where
-    ArrayType: Array,
+impl RocksDB
 {
     #[inline]
     pub fn new(db: DB) -> Self {
         Self {
             db,
             pending_inserts: Some(WriteBatch::default()),
-            array: PhantomData,
         }
     }
 }
 
-impl<ArrayType> Database<ArrayType> for RocksDB<ArrayType>
+impl<const LENGTH: usize> Database<LENGTH> for RocksDB
 where
-    ArrayType: Array,
     TreeNode<ArrayType>: Encode + Decode,
 {
-    type NodeType = TreeNode<ArrayType>;
+    type NodeType = TreeNode<LENGTH>;
     type EntryType = (usize, usize);
 
     #[inline]
@@ -51,7 +44,7 @@ where
     }
 
     #[inline]
-    fn get_node(&self, key: ArrayType) -> Result<Option<Self::NodeType>, Exception> {
+    fn get_node(&self, key: Key<LENGTH>) -> Result<Option<Self::NodeType>, Exception> {
         if let Some(buffer) = self.db.get(&key)? {
             Ok(Some(Self::NodeType::decode(buffer.as_ref())?))
         } else {
@@ -60,7 +53,7 @@ where
     }
 
     #[inline]
-    fn insert(&mut self, key: ArrayType, value: Self::NodeType) -> Result<(), Exception> {
+    fn insert(&mut self, key: Key<LENGTH>, value: Self::NodeType) -> Result<(), Exception> {
         let serialized = value.encode()?;
         if let Some(wb) = &mut self.pending_inserts {
             wb.put(key, serialized);
@@ -73,7 +66,7 @@ where
     }
 
     #[inline]
-    fn remove(&mut self, key: &ArrayType) -> Result<(), Exception> {
+    fn remove(&mut self, key: &Key<LENGTH>) -> Result<(), Exception> {
         Ok(self.db.delete(key)?)
     }
 
