@@ -3,7 +3,7 @@ use starling::hash_tree::HashTree;
 use starling::merkle_bit::BinaryMerkleTreeResult;
 
 fn main() -> BinaryMerkleTreeResult<()> {
-    let mut tree: HashTree<[u8; KEY_LEN], Vec<u8>> = HashTree::new(16)?;
+    let mut tree: HashTree<Vec<u8>, KEY_LEN> = HashTree::new(16)?;
 
     let key = [0x00; KEY_LEN];
     let value = vec![0x00; KEY_LEN];

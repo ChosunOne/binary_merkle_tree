@@ -9,7 +9,7 @@ use std::path::PathBuf;
 use hashbrown::HashMap;
 
 use crate::traits::{
-    Array, Branch, Data, Database, Decode, Encode, Exception, Hasher, Leaf, Node, NodeVariant,
+    Branch, Data, Database, Decode, Encode, Exception, Hasher, Leaf, Node, NodeVariant,
 };
 use crate::utils::tree_cell::TreeCell;
 use crate::utils::tree_ref::TreeRef;
@@ -42,15 +42,14 @@ pub struct MerkleBIT<
     NodeType,
     HasherType,
     ValueType,
-    ArrayType,
+    const LENGTH: usize
 > where
-    DatabaseType: Database<ArrayType, NodeType = NodeType>,
-    BranchType: Branch<ArrayType>,
-    LeafType: Leaf<ArrayType>,
+    DatabaseType: Database<LENGTH, NodeType = NodeType>,
+    BranchType: Branch<LENGTH>,
+    LeafType: Leaf<LENGTH>,
     DataType: Data,
-    NodeType: Node<BranchType, LeafType, DataType, ArrayType>,
-    HasherType: Hasher<ArrayType>,
-    ArrayType: Array,
+    NodeType: Node<BranchType, LeafType, DataType, LENGTH>,
+    HasherType: Hasher<LENGTH>,
     ValueType: Decode + Encode,
 {
     /// The database to store tree nodes.
@@ -68,12 +67,10 @@ pub struct MerkleBIT<
     /// Marker for dealing with `HasherType`.
     hasher: PhantomData<HasherType>,
     /// Marker for dealing with `ValueType`.
-    value: PhantomData<ValueType>,
-    /// Marker for dealing with `ArrayType`.
-    array: PhantomData<ArrayType>,
+    value: PhantomData<ValueType>
 }
 
-impl<DatabaseType, BranchType, LeafType, DataType, NodeType, HasherType, ValueType, ArrayType>
+impl<DatabaseType, BranchType, LeafType, DataType, NodeType, HasherType, ValueType, const LENGTH: usize>
     MerkleBIT<
         DatabaseType,
         BranchType,
@@ -82,17 +79,16 @@ impl<DatabaseType, BranchType, LeafType, DataType, NodeType, HasherType, ValueTy
         NodeType,
         HasherType,
         ValueType,
-        ArrayType,
+        LENGTH
     >
 where
-    DatabaseType: Database<ArrayType, NodeType = NodeType>,
-    BranchType: Branch<ArrayType>,
-    LeafType: Leaf<ArrayType>,
+    DatabaseType: Database<LENGTH, NodeType = NodeType>,
+    BranchType: Branch<LENGTH>,
+    LeafType: Leaf<LENGTH>,
     DataType: Data,
-    NodeType: Node<BranchType, LeafType, DataType, ArrayType>,
-    HasherType: Hasher<ArrayType, HashType = HasherType>,
-    ValueType: Decode + Encode,
-    ArrayType: Array,
+    NodeType: Node<BranchType, LeafType, DataType, LENGTH>,
+    HasherType: Hasher<LENGTH, HashType = HasherType>,
+    ValueType: Decode + Encode
 {
     /// Create a new `MerkleBIT` from a saved database
     /// # Errors
@@ -108,8 +104,7 @@ where
             data: PhantomData,
             node: PhantomData,
             hasher: PhantomData,
-            value: PhantomData,
-            array: PhantomData,
+            value: PhantomData
         })
     }
 
@@ -126,8 +121,7 @@ where
             data: PhantomData,
             node: PhantomData,
             hasher: PhantomData,
-            value: PhantomData,
-            array: PhantomData,
+            value: PhantomData
         })
     }
 
@@ -137,9 +131,9 @@ where
     #[inline]
     pub fn get(
         &self,
-        root_hash: &ArrayType,
-        keys: &mut [ArrayType],
-    ) -> BinaryMerkleTreeResult<HashMap<ArrayType, Option<ValueType>>> {
+        root_hash: &[u8; LENGTH],
+        keys: &mut [[u8; LENGTH]],
+    ) -> BinaryMerkleTreeResult<HashMap<[u8; LENGTH], Option<ValueType>>> {
         if keys.is_empty() {
             return Ok(HashMap::new());
         }
@@ -248,10 +242,10 @@ where
     #[inline]
     pub fn insert(
         &mut self,
-        previous_root: Option<&ArrayType>,
-        keys: &mut [ArrayType],
+        previous_root: Option<&[u8; LENGTH]>,
+        keys: &mut [[u8; LENGTH]],
         values: &[ValueType],
-    ) -> BinaryMerkleTreeResult<ArrayType> {
+    ) -> BinaryMerkleTreeResult<[u8; LENGTH]> {
         if keys.len() != values.len() {
             return Err(Exception::new("Keys and values have different lengths"));
         }
@@ -291,10 +285,10 @@ where
     /// `Exception` generated when an invalid state is encountered during tree traversal.
     fn generate_treerefs(
         &mut self,
-        root: &ArrayType,
-        keys: &mut [ArrayType],
-        key_map: &HashMap<ArrayType, ArrayType>,
-    ) -> BinaryMerkleTreeResult<Vec<TreeRef<ArrayType>>> {
+        root: &[u8; LENGTH],
+        keys: &mut [[u8; LENGTH]],
+        key_map: &HashMap<[u8; LENGTH], [u8; LENGTH]>,
+    ) -> BinaryMerkleTreeResult<Vec<TreeRef<LENGTH>>> {
         // Nodes that form the merkle proof for the new tree
         let mut proof_nodes = Vec::with_capacity(keys.len());
 
@@ -305,7 +299,7 @@ where
         };
 
         let mut cell_queue = VecDeque::with_capacity(keys.len());
-        let root_cell: TreeCell<NodeType, ArrayType> =
+        let root_cell: TreeCell<NodeType, LENGTH> =
             TreeCell::new::<BranchType, LeafType, DataType>(*root, keys, root_node, 0);
         cell_queue.push_front(root_cell);
 
@@ -423,9 +417,9 @@ where
     fn split_nodes<'a>(
         &mut self,
         depth: usize,
-        branch: ArrayType,
-        node_list: &'a [ArrayType],
-    ) -> Result<SplitNodeType<'a, BranchType, LeafType, DataType, NodeType, ArrayType>, Exception>
+        branch: [u8; LENGTH],
+        node_list: &'a [[u8; LENGTH]],
+    ) -> Result<SplitNodeType<'a, BranchType, LeafType, DataType, NodeType, LENGTH>, Exception>
     {
         if let Some(node) = self.db.get_node(branch)? {
             return if node_list.is_empty() {
@@ -476,9 +470,9 @@ where
     /// Updates reference count if a leaf already exists.
     fn insert_leaves(
         &mut self,
-        keys: &[ArrayType],
-        values: &HashMap<ArrayType, &ValueType>,
-    ) -> BinaryMerkleTreeResult<Vec<ArrayType>> {
+        keys: &[[u8; LENGTH]],
+        values: &HashMap<[u8; LENGTH], &ValueType>,
+    ) -> BinaryMerkleTreeResult<Vec<[u8; LENGTH]>> {
         let mut nodes = Vec::with_capacity(keys.len());
         for k in keys.iter() {
             let key = k.as_ref();
@@ -534,8 +528,8 @@ where
     /// tree traversal
     fn create_tree(
         &mut self,
-        mut tree_refs: Vec<TreeRef<ArrayType>>,
-    ) -> BinaryMerkleTreeResult<ArrayType> {
+        mut tree_refs: Vec<TreeRef<LENGTH>>,
+    ) -> BinaryMerkleTreeResult<[u8; LENGTH]> {
         if tree_refs.is_empty() {
             return Err(Exception::new("tree_refs should not be empty!"))
         }
@@ -572,10 +566,10 @@ where
     /// Performs the merging of `TreeRef`s until a single new root is left.
     fn merge_nodes(
         &mut self,
-        tree_refs: &mut Vec<TreeRef<ArrayType>>,
+        tree_refs: &mut Vec<TreeRef<LENGTH>>,
         level: Vec<(usize, usize, usize)>,
-    ) -> BinaryMerkleTreeResult<Option<ArrayType>> {
-        let mut root = ArrayType::default();
+    ) -> BinaryMerkleTreeResult<Option<[u8; LENGTH]>> {
+        let mut root = [0; LENGTH];
         for (split_index, tree_ref_pointer, next_tree_ref_pointer) in level {
             let mut branch = BranchType::new();
 
@@ -645,7 +639,7 @@ where
     /// # Errors
     /// `Exception` generated when an invalid state is encountered during tree traversal.
     #[inline]
-    pub fn remove(&mut self, root_hash: &ArrayType) -> BinaryMerkleTreeResult<()> {
+    pub fn remove(&mut self, root_hash: &[u8; LENGTH]) -> BinaryMerkleTreeResult<()> {
         let mut nodes = VecDeque::with_capacity(128);
         nodes.push_front(*root_hash);
 
@@ -719,9 +713,9 @@ where
     #[inline]
     pub fn generate_inclusion_proof(
         &self,
-        root: &ArrayType,
-        key: ArrayType,
-    ) -> BinaryMerkleTreeResult<Vec<(ArrayType, bool)>> {
+        root: &[u8; LENGTH],
+        key: [u8; LENGTH],
+    ) -> BinaryMerkleTreeResult<Vec<([u8; LENGTH], bool)>> {
         let mut nodes = VecDeque::with_capacity(self.depth);
         nodes.push_front(*root);
 
@@ -810,10 +804,10 @@ where
     /// `Exception` generated when the given proof is invalid.
     #[inline]
     pub fn verify_inclusion_proof(
-        root: &ArrayType,
-        key: ArrayType,
+        root: &[u8; LENGTH],
+        key: [u8; LENGTH],
         value: &ValueType,
-        proof: &[(ArrayType, bool)],
+        proof: &[([u8; LENGTH], bool)],
     ) -> BinaryMerkleTreeResult<()> {
         if proof.len() < 2 {
             return Err(Exception::new("Proof is too short to be valid"));
@@ -870,8 +864,8 @@ where
     #[inline]
     pub fn get_one(
         &self,
-        root: &ArrayType,
-        key: &ArrayType,
+        root: &[u8; LENGTH],
+        key: &[u8; LENGTH],
     ) -> BinaryMerkleTreeResult<Option<ValueType>> {
         let mut nodes = VecDeque::with_capacity(3);
         nodes.push_front(*root);
@@ -945,10 +939,10 @@ where
     #[inline]
     pub fn insert_one(
         &mut self,
-        previous_root: Option<&ArrayType>,
-        key: &ArrayType,
+        previous_root: Option<&[u8; LENGTH]>,
+        key: &[u8; LENGTH],
         value: &ValueType,
-    ) -> BinaryMerkleTreeResult<ArrayType> {
+    ) -> BinaryMerkleTreeResult<[u8; LENGTH]> {
         let mut value_map = HashMap::new();
         value_map.insert(*key, value);
 
@@ -972,18 +966,17 @@ where
 }
 
 /// Enum used for splitting nodes into either the left or right path during tree traversal
-enum SplitNodeType<'a, BranchType, LeafType, DataType, NodeType, ArrayType>
+enum SplitNodeType<'a, BranchType, LeafType, DataType, NodeType, const LENGTH: usize>
 where
-    BranchType: Branch<ArrayType>,
-    LeafType: Leaf<ArrayType>,
+    BranchType: Branch<LENGTH>,
+    LeafType: Leaf<LENGTH>,
     DataType: Data,
-    NodeType: Node<BranchType, LeafType, DataType, ArrayType>,
-    ArrayType: Array,
+    NodeType: Node<BranchType, LeafType, DataType, LENGTH>
 {
     /// Used for building the `proof_nodes` variable during tree traversal
-    Ref(TreeRef<ArrayType>),
+    Ref(TreeRef<LENGTH>),
     /// Used for appending to the `cell_queue` during tree traversal.
-    Cell(TreeCell<'a, NodeType, ArrayType>),
+    Cell(TreeCell<'a, NodeType, LENGTH>),
     /// PhantomData marker
     _UnusedBranch(PhantomData<BranchType>),
     /// PhantomData marker

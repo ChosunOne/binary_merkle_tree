@@ -17,7 +17,7 @@ pub mod integration_tests {
     type Tree = RocksTree;
 
     #[cfg(not(any(feature = "use_rocksdb")))]
-    type Tree = HashTree;
+    type Tree = HashTree<Vec<u8>, KEY_LEN>;
 
     #[test]
     #[cfg(feature = "use_serialization")]
@@ -1328,7 +1328,7 @@ pub mod integration_tests {
         type Tree = RocksTree<[u8; 2]>;
 
         #[cfg(not(any(feature = "use_rocksdb")))]
-        type Tree = HashTree<[u8; 2]>;
+        type Tree = HashTree<Vec<u8>, 2>;
 
         let seed = [0x94u8; 32];
         let path = generate_path(seed);
@@ -1369,7 +1369,7 @@ pub mod integration_tests {
         type Tree = RocksTree<[u8; 3]>;
 
         #[cfg(not(any(feature = "use_rocksdb")))]
-        type Tree = HashTree<[u8; 3]>;
+        type Tree = HashTree<Vec<u8>, 3>;
 
         let seed = [0x95u8; 32];
         let path = generate_path(seed);
@@ -1410,7 +1410,7 @@ pub mod integration_tests {
         type Tree = RocksTree<[u8; 4]>;
 
         #[cfg(not(any(feature = "use_rocksdb")))]
-        type Tree = HashTree<[u8; 4]>;
+        type Tree = HashTree<Vec<u8>, 4>;
 
         let seed = [0x96u8; 32];
         let path = generate_path(seed);
@@ -1451,7 +1451,7 @@ pub mod integration_tests {
         type Tree = RocksTree<[u8; 5]>;
 
         #[cfg(not(any(feature = "use_rocksdb")))]
-        type Tree = HashTree<[u8; 5]>;
+        type Tree = HashTree<Vec<u8>, 5>;
 
         let seed = [0x97u8; 32];
         let path = generate_path(seed);
@@ -1492,7 +1492,7 @@ pub mod integration_tests {
         type Tree = RocksTree<[u8; 6]>;
 
         #[cfg(not(any(feature = "use_rocksdb")))]
-        type Tree = HashTree<[u8; 6]>;
+        type Tree = HashTree<Vec<u8>, 6>;
 
         let seed = [0x98u8; 32];
         let path = generate_path(seed);
@@ -1533,7 +1533,7 @@ pub mod integration_tests {
         type Tree = RocksTree<[u8; 7]>;
 
         #[cfg(not(any(feature = "use_rocksdb")))]
-        type Tree = HashTree<[u8; 7]>;
+        type Tree = HashTree<Vec<u8>, 7>;
 
         let seed = [0x99u8; 32];
         let path = generate_path(seed);
@@ -1574,7 +1574,7 @@ pub mod integration_tests {
         type Tree = RocksTree<[u8; 8]>;
 
         #[cfg(not(any(feature = "use_rocksdb")))]
-        type Tree = HashTree<[u8; 8]>;
+        type Tree = HashTree<Vec<u8>, 8>;
 
         let seed = [0x9Au8; 32];
         let path = generate_path(seed);
@@ -1618,7 +1618,7 @@ pub mod integration_tests {
         type Tree = RocksTree<[u8; 9]>;
 
         #[cfg(not(any(feature = "use_rocksdb")))]
-        type Tree = HashTree<[u8; 9]>;
+        type Tree = HashTree<Vec<u8>, 9>;
 
         let seed = [0x9Bu8; 32];
         let path = generate_path(seed);
@@ -1662,7 +1662,7 @@ pub mod integration_tests {
         type Tree = RocksTree<[u8; 10]>;
 
         #[cfg(not(any(feature = "use_rocksdb")))]
-        type Tree = HashTree<[u8; 10]>;
+        type Tree = HashTree<Vec<u8>, 10>;
 
         let seed = [0x9Cu8; 32];
         let path = generate_path(seed);
@@ -1706,7 +1706,7 @@ pub mod integration_tests {
         type Tree = RocksTree<[u8; 11]>;
 
         #[cfg(not(any(feature = "use_rocksdb")))]
-        type Tree = HashTree<[u8; 11]>;
+        type Tree = HashTree<Vec<u8>, 11>;
 
         let seed = [0x9Du8; 32];
         let path = generate_path(seed);
@@ -1750,7 +1750,7 @@ pub mod integration_tests {
         type Tree = RocksTree<[u8; 12]>;
 
         #[cfg(not(any(feature = "use_rocksdb")))]
-        type Tree = HashTree<[u8; 12]>;
+        type Tree = HashTree<Vec<u8>, 12>;
 
         let seed = [0x9Eu8; 32];
         let path = generate_path(seed);
@@ -1794,7 +1794,7 @@ pub mod integration_tests {
         type Tree = RocksTree<[u8; 13]>;
 
         #[cfg(not(any(feature = "use_rocksdb")))]
-        type Tree = HashTree<[u8; 13]>;
+        type Tree = HashTree<Vec<u8>, 13>;
 
         let seed = [0x9Fu8; 32];
         let path = generate_path(seed);
@@ -1838,7 +1838,7 @@ pub mod integration_tests {
         type Tree = RocksTree<[u8; 14]>;
 
         #[cfg(not(any(feature = "use_rocksdb")))]
-        type Tree = HashTree<[u8; 14]>;
+        type Tree = HashTree<Vec<u8>, 14>;
 
         let seed = [0xA0u8; 32];
         let path = generate_path(seed);
@@ -1882,7 +1882,7 @@ pub mod integration_tests {
         type Tree = RocksTree<[u8; 15]>;
 
         #[cfg(not(any(feature = "use_rocksdb")))]
-        type Tree = HashTree<[u8; 15]>;
+        type Tree = HashTree<Vec<u8>, 15>;
 
         let seed = [0xA1u8; 32];
         let path = generate_path(seed);
@@ -1926,7 +1926,7 @@ pub mod integration_tests {
         type Tree = RocksTree<[u8; 16]>;
 
         #[cfg(not(any(feature = "use_rocksdb")))]
-        type Tree = HashTree<[u8; 16]>;
+        type Tree = HashTree<Vec<u8>, 16>;
 
         let seed = [0xA2u8; 32];
         let path = generate_path(seed);
@@ -1970,7 +1970,7 @@ pub mod integration_tests {
         type Tree = RocksTree<[u8; 17]>;
 
         #[cfg(not(any(feature = "use_rocksdb")))]
-        type Tree = HashTree<[u8; 17]>;
+        type Tree = HashTree<Vec<u8>, 17>;
 
         let seed = [0xA3u8; 32];
         let path = generate_path(seed);
@@ -2014,7 +2014,7 @@ pub mod integration_tests {
         type Tree = RocksTree<[u8; 18]>;
 
         #[cfg(not(any(feature = "use_rocksdb")))]
-        type Tree = HashTree<[u8; 18]>;
+        type Tree = HashTree<Vec<u8>, 18>;
 
         let seed = [0xA4u8; 32];
         let path = generate_path(seed);
@@ -2058,7 +2058,7 @@ pub mod integration_tests {
         type Tree = RocksTree<[u8; 19]>;
 
         #[cfg(not(any(feature = "use_rocksdb")))]
-        type Tree = HashTree<[u8; 19]>;
+        type Tree = HashTree<Vec<u8>, 19>;
 
         let seed = [0xA5u8; 32];
         let path = generate_path(seed);
@@ -2102,7 +2102,7 @@ pub mod integration_tests {
         type Tree = RocksTree<[u8; 20]>;
 
         #[cfg(not(any(feature = "use_rocksdb")))]
-        type Tree = HashTree<[u8; 20]>;
+        type Tree = HashTree<Vec<u8>, 20>;
 
         let seed = [0xA6u8; 32];
         let path = generate_path(seed);
@@ -2146,7 +2146,7 @@ pub mod integration_tests {
         type Tree = RocksTree<[u8; 21]>;
 
         #[cfg(not(any(feature = "use_rocksdb")))]
-        type Tree = HashTree<[u8; 21]>;
+        type Tree = HashTree<Vec<u8>, 21>;
 
         let seed = [0xA7u8; 32];
         let path = generate_path(seed);
@@ -2190,7 +2190,7 @@ pub mod integration_tests {
         type Tree = RocksTree<[u8; 22]>;
 
         #[cfg(not(any(feature = "use_rocksdb")))]
-        type Tree = HashTree<[u8; 22]>;
+        type Tree = HashTree<Vec<u8>, 22>;
 
         let seed = [0xA8u8; 32];
         let path = generate_path(seed);
@@ -2234,7 +2234,7 @@ pub mod integration_tests {
         type Tree = RocksTree<[u8; 23]>;
 
         #[cfg(not(any(feature = "use_rocksdb")))]
-        type Tree = HashTree<[u8; 23]>;
+        type Tree = HashTree<Vec<u8>, 23>;
 
         let seed = [0xA9u8; 32];
         let path = generate_path(seed);
@@ -2278,7 +2278,7 @@ pub mod integration_tests {
         type Tree = RocksTree<[u8; 24]>;
 
         #[cfg(not(any(feature = "use_rocksdb")))]
-        type Tree = HashTree<[u8; 24]>;
+        type Tree = HashTree<Vec<u8>, 24>;
 
         let seed = [0xAAu8; 32];
         let path = generate_path(seed);
@@ -2322,7 +2322,7 @@ pub mod integration_tests {
         type Tree = RocksTree<[u8; 25]>;
 
         #[cfg(not(any(feature = "use_rocksdb")))]
-        type Tree = HashTree<[u8; 25]>;
+        type Tree = HashTree<Vec<u8>, 25>;
 
         let seed = [0xABu8; 32];
         let path = generate_path(seed);
@@ -2366,7 +2366,7 @@ pub mod integration_tests {
         type Tree = RocksTree<[u8; 26]>;
 
         #[cfg(not(any(feature = "use_rocksdb")))]
-        type Tree = HashTree<[u8; 26]>;
+        type Tree = HashTree<Vec<u8>, 26>;
 
         let seed = [0xACu8; 32];
         let path = generate_path(seed);
@@ -2410,7 +2410,7 @@ pub mod integration_tests {
         type Tree = RocksTree<[u8; 27]>;
 
         #[cfg(not(any(feature = "use_rocksdb")))]
-        type Tree = HashTree<[u8; 27]>;
+        type Tree = HashTree<Vec<u8>, 27>;
 
         let seed = [0xADu8; 32];
         let path = generate_path(seed);
@@ -2454,7 +2454,7 @@ pub mod integration_tests {
         type Tree = RocksTree<[u8; 28]>;
 
         #[cfg(not(any(feature = "use_rocksdb")))]
-        type Tree = HashTree<[u8; 28]>;
+        type Tree = HashTree<Vec<u8>, 28>;
 
         let seed = [0xAEu8; 32];
         let path = generate_path(seed);
@@ -2498,7 +2498,7 @@ pub mod integration_tests {
         type Tree = RocksTree<[u8; 29]>;
 
         #[cfg(not(any(feature = "use_rocksdb")))]
-        type Tree = HashTree<[u8; 29]>;
+        type Tree = HashTree<Vec<u8>, 29>;
 
         let seed = [0xAFu8; 32];
         let path = generate_path(seed);
@@ -2542,7 +2542,7 @@ pub mod integration_tests {
         type Tree = RocksTree<[u8; 30]>;
 
         #[cfg(not(any(feature = "use_rocksdb")))]
-        type Tree = HashTree<[u8; 30]>;
+        type Tree = HashTree<Vec<u8>, 30>;
 
         let seed = [0xB0u8; 32];
         let path = generate_path(seed);
@@ -2586,7 +2586,7 @@ pub mod integration_tests {
         type Tree = RocksTree<[u8; 31]>;
 
         #[cfg(not(any(feature = "use_rocksdb")))]
-        type Tree = HashTree<[u8; 31]>;
+        type Tree = HashTree<Vec<u8>, 31>;
 
         let seed = [0xB1u8; 32];
         let path = generate_path(seed);
@@ -2630,7 +2630,7 @@ pub mod integration_tests {
         type Tree = RocksTree<[u8; 32]>;
 
         #[cfg(not(any(feature = "use_rocksdb")))]
-        type Tree = HashTree<[u8; 32]>;
+        type Tree = HashTree<Vec<u8>, 32>;
 
         let seed = [0xB2u8; 32];
         let path = generate_path(seed);

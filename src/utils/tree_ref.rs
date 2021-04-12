@@ -1,16 +1,13 @@
-use crate::traits::Array;
 use std::cmp::Ordering;
 
 /// A reference to a node in the tree.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd)]
-pub struct TreeRef<ArrayType>
-where
-    ArrayType: Array,
+pub struct TreeRef<const LENGTH: usize>
 {
     /// The associated key with this `TreeRef`.
-    pub key: ArrayType,
+    pub key: [u8; LENGTH],
     /// The location of the `TreeRef` in the tree.
-    pub location: ArrayType,
+    pub location: [u8; LENGTH],
     /// The total number of elements underneath this `TreeRef`.  This represents the total number of nodes
     /// under this node in the tree.
     pub node_count: u64,
@@ -19,13 +16,11 @@ where
     pub count: u32,
 }
 
-impl<ArrayType> TreeRef<ArrayType>
-where
-    ArrayType: Array,
+impl<const LENGTH: usize> TreeRef<LENGTH>
 {
     /// Creates a new `TreeRef`.
     #[inline]
-    pub fn new(key: ArrayType, location: ArrayType, node_count: u64, count: u32) -> Self {
+    pub fn new(key: [u8; LENGTH], location: [u8; LENGTH], node_count: u64, count: u32) -> Self {
         Self {
             key,
             location,
@@ -35,9 +30,7 @@ where
     }
 }
 
-impl<ArrayType> Ord for TreeRef<ArrayType>
-where
-    ArrayType: Array,
+impl<const LENGTH: usize> Ord for TreeRef<LENGTH>
 {
     #[inline]
     fn cmp(&self, other_ref: &Self) -> Ordering {

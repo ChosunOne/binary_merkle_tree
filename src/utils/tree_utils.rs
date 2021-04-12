@@ -6,7 +6,7 @@ use hashbrown::HashMap;
 
 use crate::constants::{KEY_LEN_BITS, MULTIPLY_DE_BRUIJN_BIT_POSITION};
 use crate::merkle_bit::BinaryMerkleTreeResult;
-use crate::traits::{Array, Exception};
+use crate::traits::Exception;
 use crate::utils::tree_ref::TreeRef;
 use std::convert::TryFrom;
 
@@ -19,9 +19,7 @@ use std::collections::HashSet;
 /// # Errors
 /// `Exception` generated from a failure to convert an `u8` to an `usize`
 #[inline]
-pub fn choose_zero<ArrayType>(key_array: ArrayType, bit: usize) -> Result<bool, Exception>
-where
-    ArrayType: Array,
+pub fn choose_zero<const LENGTH: usize>(key_array: [u8; LENGTH], bit: usize) -> Result<bool, Exception>
 {
     let key = key_array.as_ref();
     let index = bit >> 3;
@@ -35,12 +33,10 @@ where
 /// # Errors
 /// `Exception` generated from a failure to convert an `u8` to an `usize`
 #[inline]
-pub fn split_pairs<ArrayType>(
-    sorted_pairs: &[ArrayType],
+pub fn split_pairs<const LENGTH: usize>(
+    sorted_pairs: &[[u8; LENGTH]],
     bit: usize,
-) -> Result<(&[ArrayType], &[ArrayType]), Exception>
-where
-    ArrayType: Array,
+) -> Result<(&[[u8; LENGTH]], &[[u8; LENGTH]]), Exception>
 {
     if sorted_pairs.is_empty() {
         return Ok((&[], &[]));
@@ -73,14 +69,12 @@ where
 /// # Errors
 /// `Exception` generated from a failure to convert an `u8` to an `usize`
 #[inline]
-pub fn check_descendants<'a, ArrayType>(
-    keys: &'a [ArrayType],
+pub fn check_descendants<'a, const LENGTH: usize>(
+    keys: &'a [[u8; LENGTH]],
     branch_split_index: usize,
-    branch_key: &ArrayType,
+    branch_key: &[u8; LENGTH],
     min_split_index: usize,
-) -> Result<&'a [ArrayType], Exception>
-where
-    ArrayType: Array,
+) -> Result<&'a [[u8; LENGTH]], Exception>
 {
     let b_key = branch_key.as_ref();
     let mut start = 0;
@@ -122,12 +116,10 @@ where
 /// # Errors
 /// May return an `Exception` if the supplied `keys` is empty.
 #[inline]
-pub fn calc_min_split_index<ArrayType>(
-    keys: &[ArrayType],
-    branch_key: &ArrayType,
+pub fn calc_min_split_index<const LENGTH: usize>(
+    keys: &[[u8; LENGTH]],
+    branch_key: &[u8; LENGTH],
 ) -> Result<usize, Exception>
-where
-    ArrayType: Array,
 {
     if keys.is_empty() {
         return Err(Exception::new("keys must not be empty."));
@@ -167,11 +159,9 @@ where
 /// This function initializes a hashmap to have entries for each provided key.  Values are initialized
 /// to `None`.
 #[inline]
-pub fn generate_leaf_map<ArrayType, ValueType>(
-    keys: &[ArrayType],
-) -> HashMap<ArrayType, Option<ValueType>>
-where
-    ArrayType: Array,
+pub fn generate_leaf_map<ValueType, const LENGTH: usize>(
+    keys: &[[u8; LENGTH]],
+) -> HashMap<[u8; LENGTH], Option<ValueType>>
 {
     let mut leaf_map = HashMap::new();
     for &key in keys.iter() {
@@ -195,8 +185,8 @@ pub const fn fast_log_2(num: u8) -> u8 {
 /// # Errors
 /// `Exception` generated from a failure to convert a `u8` to a `usize`
 #[inline]
-pub fn generate_tree_ref_queue<ArrayType: Array>(
-    tree_refs: &mut Vec<TreeRef<ArrayType>>,
+pub fn generate_tree_ref_queue<const LENGTH: usize>(
+    tree_refs: &mut Vec<TreeRef<LENGTH>>,
     tree_ref_queue: &mut HashMap<usize, Vec<(usize, usize, usize)>>,
 ) -> BinaryMerkleTreeResult<HashSet<usize>> {
     let mut unique_split_bits = HashSet::new();

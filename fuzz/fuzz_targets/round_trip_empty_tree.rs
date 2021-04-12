@@ -4,19 +4,21 @@ extern crate starling;
 
 fuzz_target!(|data: &[u8]| {
     // fuzzed code goes here
-    let key_and_value = get_key_and_value(data);
-    let mut key = key_and_value.0.iter().map(|x| x.as_slice()).collect::<Vec<_>>();
-    let mut val = key_and_value.1.iter().collect::<Vec<_>>();
-    let mut bmt = starling::tree::HashTree::new(16);
-    let root = bmt.insert(None, &mut key, &mut val).unwrap();
-    let items = bmt.get(&root, &mut key).unwrap();
-    assert_eq!(items, vec![Some(key_and_value.1[0].clone())]);
+    let (key, value) = get_key_and_value(data);
+    let mut bmt = starling::HashTree::new(16).unwrap();
+    let root = bmt.insert(None, &mut [&key], &[value]).unwrap();
+    let items = bmt.get(&root, [&mut key]).unwrap();
+    assert_eq!(items.get(&key), Some(value.clone()));
 });
 
-fn get_key_and_value(data: &[u8]) -> (Vec<Vec<u8>>, Vec<Vec<u8>>) {
+fn get_key_and_value(data: &[u8]) -> ([u8; 16], Vec<u8>) {
     if data.is_empty() || data.len() < 2 {
-        return (vec![vec![0]], vec![vec![0]])
+        return ([0; 16], vec![0; 16])
     }
-    let split = data.split_at(data.len() / 2);
-    (vec![split.0.to_vec()], vec![split.1.to_vec()])
+    let (key_slice, value_slice) = data.split_at(data.len() / 2);
+    let mut key: [u8; 16] = [0; 16];
+    let mut value: Vec<u8> = vec![0; 16];
+    key.copy_from_slice(key_slice);
+    value.copy_from_slice(value_slice);
+    (key, value)
 }

@@ -17,7 +17,7 @@ use serde_yaml;
 
 #[cfg(feature = "use_serde")]
 use crate::merkle_bit::BinaryMerkleTreeResult;
-use crate::traits::{Array, Node, NodeVariant};
+use crate::traits::{Node, NodeVariant};
 #[cfg(feature = "use_serialization")]
 use crate::traits::{Decode, Encode};
 use crate::tree::tree_branch::TreeBranch;
@@ -29,24 +29,20 @@ use evmap::ShallowCopy;
 /// A node in the tree.
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(any(feature = "use_serde"), derive(Serialize, Deserialize))]
-pub struct TreeNode<ArrayType>
-where
-    ArrayType: Array,
+pub struct TreeNode<const LENGTH: usize>
 {
     /// The number of references to this node.
     pub references: u64,
     /// The `NodeVariant` of the node.
-    pub node: NodeVariant<TreeBranch<ArrayType>, TreeLeaf<ArrayType>, TreeData, ArrayType>,
+    pub node: NodeVariant<TreeBranch<LENGTH>, TreeLeaf<LENGTH>, TreeData, LENGTH>,
 }
 
-impl<ArrayType> TreeNode<ArrayType>
-where
-    ArrayType: Array,
+impl<const LENGTH: usize> TreeNode<LENGTH>
 {
     /// Creates a new `TreeNode`.
     #[inline]
     pub fn new(
-        node_variant: NodeVariant<TreeBranch<ArrayType>, TreeLeaf<ArrayType>, TreeData, ArrayType>,
+        node_variant: NodeVariant<TreeBranch<LENGTH>, TreeLeaf<LENGTH>, TreeData, LENGTH>,
     ) -> Self {
         Self {
             references: 0,
@@ -65,12 +61,12 @@ where
     }
 
     /// Sets the node as a `NodeVariant::Branch`.
-    fn set_branch(&mut self, branch: TreeBranch<ArrayType>) {
+    fn set_branch(&mut self, branch: TreeBranch<LENGTH>) {
         self.node = NodeVariant::Branch(branch);
     }
 
     /// Sets the node as a `NodeVariant::Leaf`.
-    fn set_leaf(&mut self, leaf: TreeLeaf<ArrayType>) {
+    fn set_leaf(&mut self, leaf: TreeLeaf<LENGTH>) {
         self.node = NodeVariant::Leaf(leaf);
     }
 
@@ -80,14 +76,12 @@ where
     }
 }
 
-impl<ArrayType> Node<TreeBranch<ArrayType>, TreeLeaf<ArrayType>, TreeData, ArrayType>
-    for TreeNode<ArrayType>
-where
-    ArrayType: Array,
+impl<const LENGTH: usize> Node<TreeBranch<LENGTH>, TreeLeaf<LENGTH>, TreeData, LENGTH>
+    for TreeNode<LENGTH>
 {
     #[inline]
     fn new(
-        node_variant: NodeVariant<TreeBranch<ArrayType>, TreeLeaf<ArrayType>, TreeData, ArrayType>,
+        node_variant: NodeVariant<TreeBranch<LENGTH>, TreeLeaf<LENGTH>, TreeData, LENGTH>,
     ) -> Self {
         Self::new(node_variant)
     }
@@ -99,7 +93,7 @@ where
     #[inline]
     fn get_variant(
         self,
-    ) -> NodeVariant<TreeBranch<ArrayType>, TreeLeaf<ArrayType>, TreeData, ArrayType> {
+    ) -> NodeVariant<TreeBranch<LENGTH>, TreeLeaf<LENGTH>, TreeData, LENGTH> {
         self.node
     }
 
@@ -108,11 +102,11 @@ where
         Self::set_references(self, references)
     }
     #[inline]
-    fn set_branch(&mut self, branch: TreeBranch<ArrayType>) {
+    fn set_branch(&mut self, branch: TreeBranch<LENGTH>) {
         Self::set_branch(self, branch)
     }
     #[inline]
-    fn set_leaf(&mut self, leaf: TreeLeaf<ArrayType>) {
+    fn set_leaf(&mut self, leaf: TreeLeaf<LENGTH>) {
         Self::set_leaf(self, leaf)
     }
     #[inline]

@@ -95,3 +95,5 @@ pub mod utils;
 #[cfg(feature = "use_rocksdb")]
 /// An implementation of the `MerkleBIT` with a `RocksDB` backend database.
 pub mod rocks_tree;
+
+pub use hash_tree::HashTree;

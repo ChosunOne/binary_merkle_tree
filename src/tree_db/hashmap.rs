@@ -1,37 +1,30 @@
 use std::collections::hash_map::HashMap;
 use std::path::PathBuf;
 
-use crate::constants::KEY_LEN;
-use crate::traits::{Array, Database, Exception};
+use crate::traits::{Database, Exception};
 use crate::tree::tree_node::TreeNode;
 
 /// A database consisting of a `HashMap`.
-pub struct HashDB<ArrayType>
-where
-    ArrayType: Array,
+pub struct HashDB<const LENGTH: usize>
 {
     /// The internal `HashMap` for storing nodes.
-    map: HashMap<ArrayType, TreeNode<ArrayType>>,
+    map: HashMap<[u8; LENGTH], TreeNode<LENGTH>>,
 }
 
-impl<ArrayType> HashDB<ArrayType>
-where
-    ArrayType: Array,
+impl<const LENGTH: usize> HashDB<LENGTH>
 {
     /// Creates a new `HashDB`.
     #[inline]
     #[must_use]
-    pub fn new(map: HashMap<ArrayType, TreeNode<ArrayType>>) -> Self {
+    pub fn new(map: HashMap<[u8; LENGTH], TreeNode<LENGTH>>) -> Self {
         Self { map }
     }
 }
 
-impl<ArrayType> Database<ArrayType> for HashDB<ArrayType>
-where
-    ArrayType: Array,
+impl<const LENGTH: usize> Database<LENGTH> for HashDB<LENGTH>
 {
-    type NodeType = TreeNode<ArrayType>;
-    type EntryType = ([u8; KEY_LEN], Vec<u8>);
+    type NodeType = TreeNode<LENGTH>;
+    type EntryType = ([u8; LENGTH], Vec<u8>);
 
     #[inline]
     fn open(_path: &PathBuf) -> Result<Self, Exception> {
@@ -39,7 +32,7 @@ where
     }
 
     #[inline]
-    fn get_node(&self, key: ArrayType) -> Result<Option<Self::NodeType>, Exception> {
+    fn get_node(&self, key: [u8; LENGTH]) -> Result<Option<Self::NodeType>, Exception> {
         if let Some(m) = self.map.get(&key) {
             let node = m.clone();
             Ok(Some(node))
@@ -49,13 +42,13 @@ where
     }
 
     #[inline]
-    fn insert(&mut self, key: ArrayType, value: Self::NodeType) -> Result<(), Exception> {
+    fn insert(&mut self, key: [u8; LENGTH], value: Self::NodeType) -> Result<(), Exception> {
         self.map.insert(key, value);
         Ok(())
     }
 
     #[inline]
-    fn remove(&mut self, key: &ArrayType) -> Result<(), Exception> {
+    fn remove(&mut self, key: &[u8 ;LENGTH]) -> Result<(), Exception> {
         self.map.remove(key);
         Ok(())
     }

@@ -2,32 +2,26 @@ use std::path::PathBuf;
 
 use hashbrown::HashMap;
 
-use crate::traits::{Array, Database, Exception};
+use crate::traits::{Database, Exception};
 use crate::tree::tree_node::TreeNode;
 
-pub struct HashDB<ArrayType>
-where
-    ArrayType: Array,
+pub struct HashDB<const LENGTH: usize>
 {
-    map: HashMap<ArrayType, TreeNode<ArrayType>>,
+    map: HashMap<[u8; LENGTH], TreeNode<LENGTH>>,
 }
 
-impl<ArrayType> HashDB<ArrayType>
-where
-    ArrayType: Array,
+impl<const LENGTH: usize> HashDB<LENGTH>
 {
     #[inline]
-    pub fn new(map: HashMap<ArrayType, TreeNode<ArrayType>>) -> Self {
+    pub fn new(map: HashMap<[u8; LENGTH], TreeNode<LENGTH>>) -> Self {
         Self { map }
     }
 }
 
-impl<ArrayType> Database<ArrayType> for HashDB<ArrayType>
-where
-    ArrayType: Array,
+impl<const LENGTH: usize> Database<LENGTH> for HashDB<LENGTH>
 {
-    type NodeType = TreeNode<ArrayType>;
-    type EntryType = (Vec<u8>, TreeNode<ArrayType>);
+    type NodeType = TreeNode<LENGTH>;
+    type EntryType = (Vec<u8>, TreeNode<LENGTH>);
 
     #[inline]
     fn open(_path: &PathBuf) -> Result<Self, Exception> {
@@ -35,7 +29,7 @@ where
     }
 
     #[inline]
-    fn get_node(&self, key: ArrayType) -> Result<Option<Self::NodeType>, Exception> {
+    fn get_node(&self, key: [u8; LENGTH]) -> Result<Option<Self::NodeType>, Exception> {
         if let Some(m) = self.map.get(&key) {
             let node = m.clone();
             Ok(Some(node))
@@ -45,13 +39,13 @@ where
     }
 
     #[inline]
-    fn insert(&mut self, key: ArrayType, value: Self::NodeType) -> Result<(), Exception> {
+    fn insert(&mut self, key: [u8; LENGTH], value: Self::NodeType) -> Result<(), Exception> {
         self.map.insert(key, value);
         Ok(())
     }
 
     #[inline]
-    fn remove(&mut self, key: &ArrayType) -> Result<(), Exception> {
+    fn remove(&mut self, key: &[u8; LENGTH]) -> Result<(), Exception> {
         self.map.remove(key);
         Ok(())
     }
