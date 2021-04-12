@@ -18,34 +18,33 @@ use serde_yaml;
 
 #[cfg(feature = "use_serde")]
 use crate::merkle_bit::BinaryMerkleTreeResult;
-use crate::traits::{Branch, Key, SerdeHelper};
+use crate::traits::{Branch, Key};
 #[cfg(feature = "use_serde")]
-use crate::traits::{Decode, Encode, Exception};
+use crate::traits::{Decode, Encode, Exception, SerdeHelper};
 
 /// A struct representing a branch in the tree.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(any(feature = "use_serde"), derive(Serialize, Deserialize))]
-pub struct TreeBranch<const LENGTH: usize>
-{
+pub struct TreeBranch<const LENGTH: usize> {
     /// The number of leaf nodes under this branch.
     count: u64,
     /// The location of the next node when traversing the zero branch.
-    #[serde(with = "SerdeHelper")]
+
+    #[cfg_attr(any(feature = "use_serde"), serde(with = "SerdeHelper"))]
     zero: Key<LENGTH>,
     /// The location of the next node when traversing the one branch.
-    #[serde(with = "SerdeHelper")]
+    #[cfg_attr(any(feature = "use_serde"), serde(with = "SerdeHelper"))]
     one: Key<LENGTH>,
     /// The index bit of the associated key on which to make a decision to go down the zero or one branch.
     split_index: usize,
     /// The associated key with this branch.
-    #[serde(with = "SerdeHelper")]
+    #[cfg_attr(any(feature = "use_serde"), serde(with = "SerdeHelper"))]
     key: Key<LENGTH>,
 }
 
-impl<const LENGTH: usize> TreeBranch<LENGTH>
-{
+impl<const LENGTH: usize> TreeBranch<LENGTH> {
     /// Create a new `TreeBranch`
-    fn new() -> Self {
+    const fn new() -> Self {
         Self {
             count: 0,
             zero: [0; LENGTH],
@@ -56,27 +55,27 @@ impl<const LENGTH: usize> TreeBranch<LENGTH>
     }
 
     /// Get the count of leaf nodes under this branch.
-    fn get_count(&self) -> u64 {
+    const fn get_count(&self) -> u64 {
         self.count
     }
 
     /// Get the location of the next node when going down the zero side.
-    fn get_zero(&self) -> &Key<LENGTH> {
+    const fn get_zero(&self) -> &Key<LENGTH> {
         &self.zero
     }
 
     /// Get the location of the next node when going down the one side.
-    fn get_one(&self) -> &Key<LENGTH> {
+    const fn get_one(&self) -> &Key<LENGTH> {
         &self.one
     }
 
     /// Get the index to split on when deciding which child to traverse.
-    fn get_split_index(&self) -> usize {
+    const fn get_split_index(&self) -> usize {
         self.split_index
     }
 
     /// Get the associated key with this branch.
-    fn get_key(&self) -> &Key<LENGTH> {
+    const fn get_key(&self) -> &Key<LENGTH> {
         &self.key
     }
 
@@ -106,13 +105,12 @@ impl<const LENGTH: usize> TreeBranch<LENGTH>
     }
 
     /// Decomposes the `TreeBranch` into its constituent parts.
-    fn decompose(self) -> (u64, Key<LENGTH>, Key<LENGTH>, usize, Key<LENGTH>) {
+    const fn decompose(self) -> (u64, Key<LENGTH>, Key<LENGTH>, usize, Key<LENGTH>) {
         (self.count, self.zero, self.one, self.split_index, self.key)
     }
 }
 
-impl<const LENGTH: usize> Branch<LENGTH> for TreeBranch<LENGTH>
-{
+impl<const LENGTH: usize> Branch<LENGTH> for TreeBranch<LENGTH> {
     #[inline]
     fn new() -> Self {
         Self::new()
@@ -167,8 +165,7 @@ impl<const LENGTH: usize> Branch<LENGTH> for TreeBranch<LENGTH>
 }
 
 #[cfg(feature = "use_bincode")]
-impl<const LENGTH: usize> Encode for TreeBranch<LENGTH>
-{
+impl<const LENGTH: usize> Encode for TreeBranch<LENGTH> {
     #[inline]
     fn encode(&self) -> BinaryMerkleTreeResult<Vec<u8>> {
         Ok(serialize(self)?)
@@ -184,8 +181,7 @@ impl From<Box<bincode::ErrorKind>> for Exception {
 }
 
 #[cfg(feature = "use_json")]
-impl<const LENGTH: usize> Encode for TreeBranch<LENGTH>
-{
+impl<const LENGTH: usize> Encode for TreeBranch<LENGTH> {
     #[inline]
     fn encode(&self) -> BinaryMerkleTreeResult<Vec<u8>> {
         let encoded = serde_json::to_string(&self)?;
@@ -210,8 +206,7 @@ impl From<FromUtf8Error> for Exception {
 }
 
 #[cfg(feature = "use_cbor")]
-impl<const LENGTH: usize> Encode for TreeBranch<LENGTH>
-{
+impl<const LENGTH: usize> Encode for TreeBranch<LENGTH> {
     #[inline]
     fn encode(&self) -> BinaryMerkleTreeResult<Vec<u8>> {
         Ok(serde_cbor::to_vec(&self)?)
@@ -227,8 +222,7 @@ impl From<serde_cbor::error::Error> for Exception {
 }
 
 #[cfg(feature = "use_yaml")]
-impl<const LENGTH: usize> Encode for TreeBranch<LENGTH>
-{
+impl<const LENGTH: usize> Encode for TreeBranch<LENGTH> {
     #[inline]
     fn encode(&self) -> BinaryMerkleTreeResult<Vec<u8>> {
         Ok(serde_yaml::to_vec(&self)?)
@@ -244,8 +238,7 @@ impl From<serde_yaml::Error> for Exception {
 }
 
 #[cfg(feature = "use_pickle")]
-impl<const LENGTH: usize> Encode for TreeBranch<LENGTH>
-{
+impl<const LENGTH: usize> Encode for TreeBranch<LENGTH> {
     #[inline]
     fn encode(&self) -> BinaryMerkleTreeResult<Vec<u8>> {
         Ok(serde_pickle::to_vec(&self, true)?)
@@ -261,8 +254,7 @@ impl From<serde_pickle::Error> for Exception {
 }
 
 #[cfg(feature = "use_ron")]
-impl<const LENGTH: usize> Encode for TreeBranch<LENGTH>
-{
+impl<const LENGTH: usize> Encode for TreeBranch<LENGTH> {
     #[inline]
     fn encode(&self) -> BinaryMerkleTreeResult<Vec<u8>> {
         Ok(ron::ser::to_string(&self)?.as_bytes().to_vec())
@@ -278,8 +270,7 @@ impl From<ron::error::Error> for Exception {
 }
 
 #[cfg(feature = "use_bincode")]
-impl<const LENGTH: usize> Decode for TreeBranch<LENGTH>
-{
+impl<const LENGTH: usize> Decode for TreeBranch<LENGTH> {
     #[inline]
     fn decode(buffer: &[u8]) -> BinaryMerkleTreeResult<Self> {
         let a = deserialize(buffer)?;
@@ -288,8 +279,7 @@ impl<const LENGTH: usize> Decode for TreeBranch<LENGTH>
 }
 
 #[cfg(feature = "use_json")]
-impl<const LENGTH: usize> Decode for TreeBranch<LENGTH>
-{
+impl<const LENGTH: usize> Decode for TreeBranch<LENGTH> {
     #[inline]
     fn decode(buffer: &[u8]) -> BinaryMerkleTreeResult<Self> {
         let decoded_string = String::from_utf8(buffer.to_vec())?;
@@ -310,8 +300,7 @@ where
 }
 
 #[cfg(feature = "use_yaml")]
-impl<const LENGTH: usize> Decode for TreeBranch<LENGTH>
-{
+impl<const LENGTH: usize> Decode for TreeBranch<LENGTH> {
     #[inline]
     fn decode(buffer: &[u8]) -> BinaryMerkleTreeResult<Self> {
         Ok(serde_yaml::from_slice(buffer)?)
@@ -319,8 +308,7 @@ impl<const LENGTH: usize> Decode for TreeBranch<LENGTH>
 }
 
 #[cfg(feature = "use_pickle")]
-impl<const LENGTH: usize> Decode for TreeBranch<LENGTH>
-{
+impl<const LENGTH: usize> Decode for TreeBranch<LENGTH> {
     #[inline]
     fn decode(buffer: &[u8]) -> BinaryMerkleTreeResult<Self> {
         Ok(serde_pickle::from_slice(buffer)?)
@@ -328,8 +316,7 @@ impl<const LENGTH: usize> Decode for TreeBranch<LENGTH>
 }
 
 #[cfg(feature = "use_ron")]
-impl<const LENGTH: usize> Decode for TreeBranch<LENGTH>
-{
+impl<const LENGTH: usize> Decode for TreeBranch<LENGTH> {
     #[inline]
     fn decode(buffer: &[u8]) -> BinaryMerkleTreeResult<Self> {
         Ok(ron::de::from_bytes(buffer)?)

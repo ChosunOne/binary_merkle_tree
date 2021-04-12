@@ -2,8 +2,7 @@ use crate::traits::Hasher;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::Hasher as DefaultHasherTrait;
 
-impl<const LENGTH: usize> Hasher<LENGTH> for DefaultHasher
-{
+impl<const LENGTH: usize> Hasher<LENGTH> for DefaultHasher {
     type HashType = Self;
 
     #[inline]

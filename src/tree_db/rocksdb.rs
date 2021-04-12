@@ -14,14 +14,12 @@ impl From<rocksdb::Error> for Exception {
     }
 }
 
-pub struct RocksDB
-{
+pub struct RocksDB {
     db: DB,
-    pending_inserts: Option<WriteBatch>
+    pending_inserts: Option<WriteBatch>,
 }
 
-impl RocksDB
-{
+impl RocksDB {
     #[inline]
     pub fn new(db: DB) -> Self {
         Self {

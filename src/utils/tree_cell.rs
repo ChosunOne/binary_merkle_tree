@@ -1,8 +1,8 @@
-use crate::traits::{Branch, Data, Leaf, Key};
+use crate::traits::{Branch, Data, Key, Leaf};
 
 /// Represents a position in the tree during tree traversal.
-pub struct TreeCell<'a, NodeType, const LENGTH: usize>
-{
+#[non_exhaustive]
+pub struct TreeCell<'a, NodeType, const LENGTH: usize> {
     /// The location of the node being traversed.
     pub location: Key<LENGTH>,
     /// The keys traversing this part of the tree.
@@ -13,8 +13,7 @@ pub struct TreeCell<'a, NodeType, const LENGTH: usize>
     pub depth: usize,
 }
 
-impl<'a, NodeType, const LENGTH: usize> TreeCell<'a, NodeType, LENGTH>
-{
+impl<'a, NodeType, const LENGTH: usize> TreeCell<'a, NodeType, LENGTH> {
     /// Creates a new `TreeCell`.
     #[inline]
     pub fn new<BranchType, LeafType, DataType>(

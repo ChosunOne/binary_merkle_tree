@@ -29,7 +29,7 @@ pub struct TreeData {
 
 impl TreeData {
     /// Creates a new `TreeData` node.
-    fn new() -> Self {
+    const fn new() -> Self {
         Self { value: vec![] }
     }
 

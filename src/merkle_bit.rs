@@ -3,12 +3,14 @@ use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::convert::TryFrom;
 use std::marker::PhantomData;
-use std::path::PathBuf;
+use std::path::Path;
 
 #[cfg(feature = "use_hashbrown")]
 use hashbrown::HashMap;
 
-use crate::traits::{Branch, Data, Database, Decode, Encode, Exception, Hasher, Leaf, Node, NodeVariant, Key};
+use crate::traits::{
+    Branch, Data, Database, Decode, Encode, Exception, Hasher, Key, Leaf, Node, NodeVariant,
+};
 use crate::utils::tree_cell::TreeCell;
 use crate::utils::tree_ref::TreeRef;
 use crate::utils::tree_utils::{
@@ -40,7 +42,7 @@ pub struct MerkleBIT<
     NodeType,
     HasherType,
     ValueType,
-    const LENGTH: usize
+    const LENGTH: usize,
 > where
     DatabaseType: Database<LENGTH, NodeType = NodeType>,
     BranchType: Branch<LENGTH>,
@@ -65,11 +67,10 @@ pub struct MerkleBIT<
     /// Marker for dealing with `HasherType`.
     hasher: PhantomData<HasherType>,
     /// Marker for dealing with `ValueType`.
-    value: PhantomData<ValueType>
+    value: PhantomData<ValueType>,
 }
 
-impl<DatabaseType, BranchType, LeafType, DataType, NodeType, HasherType, ValueType, const LENGTH: usize>
-    MerkleBIT<
+impl<
         DatabaseType,
         BranchType,
         LeafType,
@@ -77,8 +78,9 @@ impl<DatabaseType, BranchType, LeafType, DataType, NodeType, HasherType, ValueTy
         NodeType,
         HasherType,
         ValueType,
-        LENGTH
+        const LENGTH: usize,
     >
+    MerkleBIT<DatabaseType, BranchType, LeafType, DataType, NodeType, HasherType, ValueType, LENGTH>
 where
     DatabaseType: Database<LENGTH, NodeType = NodeType>,
     BranchType: Branch<LENGTH>,
@@ -86,13 +88,13 @@ where
     DataType: Data,
     NodeType: Node<BranchType, LeafType, DataType, LENGTH>,
     HasherType: Hasher<LENGTH, HashType = HasherType>,
-    ValueType: Decode + Encode
+    ValueType: Decode + Encode,
 {
     /// Create a new `MerkleBIT` from a saved database
     /// # Errors
     /// `Exception` generated if the `open` fails.
     #[inline]
-    pub fn new(path: &PathBuf, depth: usize) -> BinaryMerkleTreeResult<Self> {
+    pub fn new(path: &Path, depth: usize) -> BinaryMerkleTreeResult<Self> {
         let db = DatabaseType::open(path)?;
         Ok(Self {
             db,
@@ -102,7 +104,7 @@ where
             data: PhantomData,
             node: PhantomData,
             hasher: PhantomData,
-            value: PhantomData
+            value: PhantomData,
         })
     }
 
@@ -119,7 +121,7 @@ where
             data: PhantomData,
             node: PhantomData,
             hasher: PhantomData,
-            value: PhantomData
+            value: PhantomData,
         })
     }
 
@@ -138,7 +140,7 @@ where
 
         let mut leaf_map = generate_leaf_map(keys);
 
-        keys.sort();
+        keys.sort_unstable();
 
         let root_node = if let Some(n) = self.db.get_node(*root_hash)? {
             n
@@ -252,7 +254,7 @@ where
             value_map.insert(key, value);
         }
 
-        keys.sort();
+        keys.sort_unstable();
 
         let nodes = self.insert_leaves(keys, &value_map)?;
 
@@ -444,7 +446,7 @@ where
                     depth + 1,
                 );
                 Ok(SplitNodeType::Cell(new_cell))
-            }
+            };
         }
         Err(Exception::new("Failed to find node in database."))
     }
@@ -514,7 +516,7 @@ where
         mut tree_refs: Vec<TreeRef<LENGTH>>,
     ) -> BinaryMerkleTreeResult<Key<LENGTH>> {
         if tree_refs.is_empty() {
-            return Err(Exception::new("tree_refs should not be empty!"))
+            return Err(Exception::new("tree_refs should not be empty!"));
         }
 
         if tree_refs.len() == 1 {
@@ -529,21 +531,17 @@ where
 
         let unique_split_bits = generate_tree_ref_queue(&mut tree_refs, &mut tree_ref_queue)?;
         let mut indices = unique_split_bits.into_iter().collect::<Vec<_>>();
-        indices.sort();
+        indices.sort_unstable();
 
         let mut root = None;
         for i in indices.into_iter().rev() {
-            if let Some(level) = tree_ref_queue.remove(&i){
+            if let Some(level) = tree_ref_queue.remove(&i) {
                 root = self.merge_nodes(&mut tree_refs, level)?;
             } else {
-                return Err(Exception::new("Level should not be empty."))
+                return Err(Exception::new("Level should not be empty."));
             }
         }
-        if let Some(r) = root {
-            Ok(r)
-        } else {
-            Err(Exception::new("Failed to get root."))
-        }
+        root.map_or_else(|| Err(Exception::new("Failed to get root.")), Ok)
     }
 
     /// Performs the merging of `TreeRef`s until a single new root is left.
@@ -641,9 +639,7 @@ where
             };
 
             let mut refs = node.get_references();
-            if refs > 0 {
-                refs -= 1;
-            }
+            refs = refs.saturating_sub(1);
 
             let mut new_node;
             match node.get_variant() {
@@ -939,7 +935,7 @@ where
     BranchType: Branch<LENGTH>,
     LeafType: Leaf<LENGTH>,
     DataType: Data,
-    NodeType: Node<BranchType, LeafType, DataType, LENGTH>
+    NodeType: Node<BranchType, LeafType, DataType, LENGTH>,
 {
     /// Used for building the `proof_nodes` variable during tree traversal
     Ref(TreeRef<LENGTH>),

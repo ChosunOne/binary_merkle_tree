@@ -19,8 +19,10 @@ use std::collections::HashSet;
 /// # Errors
 /// `Exception` generated from a failure to convert an `u8` to an `usize`
 #[inline]
-pub fn choose_zero<const LENGTH: usize>(key_array: Key<LENGTH>, bit: usize) -> Result<bool, Exception>
-{
+pub fn choose_zero<const LENGTH: usize>(
+    key_array: Key<LENGTH>,
+    bit: usize,
+) -> Result<bool, Exception> {
     let key = key_array.as_ref();
     let index = bit >> 3;
     let shift = bit % 8;
@@ -36,8 +38,7 @@ pub fn choose_zero<const LENGTH: usize>(key_array: Key<LENGTH>, bit: usize) -> R
 pub fn split_pairs<const LENGTH: usize>(
     sorted_pairs: &[Key<LENGTH>],
     bit: usize,
-) -> Result<(&[Key<LENGTH>], &[Key<LENGTH>]), Exception>
-{
+) -> Result<(&[Key<LENGTH>], &[Key<LENGTH>]), Exception> {
     if sorted_pairs.is_empty() {
         return Ok((&[], &[]));
     }
@@ -46,11 +47,11 @@ pub fn split_pairs<const LENGTH: usize>(
     let mut max = sorted_pairs.len();
 
     if choose_zero(sorted_pairs[max - 1], bit)? {
-        return Ok((&sorted_pairs[..], &[]));
+        return Ok((sorted_pairs, &[]));
     }
 
     if !choose_zero(sorted_pairs[0], bit)? {
-        return Ok((&[], &sorted_pairs[..]));
+        return Ok((&[], sorted_pairs));
     }
 
     while max - min > 1 {
@@ -74,8 +75,7 @@ pub fn check_descendants<'a, const LENGTH: usize>(
     branch_split_index: usize,
     branch_key: &Key<LENGTH>,
     min_split_index: usize,
-) -> Result<&'a [Key<LENGTH>], Exception>
-{
+) -> Result<&'a [Key<LENGTH>], Exception> {
     let b_key = branch_key.as_ref();
     let mut start = 0;
     let mut end = 0;
@@ -119,8 +119,7 @@ pub fn check_descendants<'a, const LENGTH: usize>(
 pub fn calc_min_split_index<const LENGTH: usize>(
     keys: &[Key<LENGTH>],
     branch_key: &Key<LENGTH>,
-) -> Result<usize, Exception>
-{
+) -> Result<usize, Exception> {
     if keys.is_empty() {
         return Err(Exception::new("keys must not be empty."));
     }
@@ -159,10 +158,10 @@ pub fn calc_min_split_index<const LENGTH: usize>(
 /// This function initializes a hashmap to have entries for each provided key.  Values are initialized
 /// to `None`.
 #[inline]
+#[must_use]
 pub fn generate_leaf_map<ValueType, const LENGTH: usize>(
     keys: &[Key<LENGTH>],
-) -> HashMap<Key<LENGTH>, Option<ValueType>>
-{
+) -> HashMap<Key<LENGTH>, Option<ValueType>> {
     let mut leaf_map = HashMap::new();
     for &key in keys.iter() {
         leaf_map.insert(key, None);

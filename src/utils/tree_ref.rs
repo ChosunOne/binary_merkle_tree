@@ -1,10 +1,10 @@
-use std::cmp::Ordering;
 use crate::traits::Key;
+use std::cmp::Ordering;
 
 /// A reference to a node in the tree.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd)]
-pub struct TreeRef<const LENGTH: usize>
-{
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+pub struct TreeRef<const LENGTH: usize> {
     /// The associated key with this `TreeRef`.
     pub key: Key<LENGTH>,
     /// The location of the `TreeRef` in the tree.
@@ -17,11 +17,11 @@ pub struct TreeRef<const LENGTH: usize>
     pub count: u32,
 }
 
-impl<const LENGTH: usize> TreeRef<LENGTH>
-{
+impl<const LENGTH: usize> TreeRef<LENGTH> {
     /// Creates a new `TreeRef`.
     #[inline]
-    pub fn new(key: Key<LENGTH>, location: Key<LENGTH>, node_count: u64, count: u32) -> Self {
+    #[must_use]
+    pub const fn new(key: Key<LENGTH>, location: Key<LENGTH>, node_count: u64, count: u32) -> Self {
         Self {
             key,
             location,
@@ -31,8 +31,13 @@ impl<const LENGTH: usize> TreeRef<LENGTH>
     }
 }
 
-impl<const LENGTH: usize> Ord for TreeRef<LENGTH>
-{
+impl<const  LENGTH: usize> PartialOrd for TreeRef<LENGTH> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.key.cmp(&other.key))
+    }
+}
+
+impl<const LENGTH: usize> Ord for TreeRef<LENGTH> {
     #[inline]
     fn cmp(&self, other_ref: &Self) -> Ordering {
         self.key.cmp(&other_ref.key)

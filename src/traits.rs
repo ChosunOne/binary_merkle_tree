@@ -1,6 +1,6 @@
 use std::error::Error;
 use std::fmt::{Display, Formatter, Result as FmtResult};
-use std::path::PathBuf;
+use std::path::Path;
 
 #[cfg(feature = "use_serde")]
 use serde::{Deserialize, Serialize};
@@ -8,17 +8,21 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "use_digest")]
 use digest::Digest;
 
+#[cfg(feature = "use_serde")]
+use serde::de::{Error as SerdeError, SeqAccess, Visitor};
+#[cfg(feature = "use_serde")]
+use serde::ser::SerializeTuple;
+#[cfg(feature = "use_serde")]
+use serde::{Deserializer, Serializer};
 use std::convert::{Infallible, TryFrom};
+#[cfg(feature = "use_serde")]
+use std::fmt;
+#[cfg(feature = "use_serde")]
 use std::marker::PhantomData;
 use std::num::TryFromIntError;
-use serde::{Serializer, Deserializer};
-use serde::ser::SerializeTuple;
-use serde::de::{Visitor, SeqAccess, Error as SerdeError};
-use std::fmt;
 
 /// The required interface for structs representing a hasher.
-pub trait Hasher<const LENGTH: usize>
-{
+pub trait Hasher<const LENGTH: usize> {
     /// The type of hasher.
     type HashType;
     /// Creates a new `HashType`.
@@ -32,7 +36,7 @@ pub trait Hasher<const LENGTH: usize>
 #[cfg(feature = "use_digest")]
 impl<T, const LENGTH: usize> Hasher<LENGTH> for T
 where
-    T: Digest
+    T: Digest,
 {
     type HashType = T;
 
@@ -57,8 +61,7 @@ where
 }
 
 /// The required interface for structs representing branches in the tree.
-pub trait Branch<const LENGTH: usize>
-{
+pub trait Branch<const LENGTH: usize> {
     /// Creates a new `Branch`.
     fn new() -> Self;
     /// Gets the count of leaves beneath this node.
@@ -86,8 +89,7 @@ pub trait Branch<const LENGTH: usize>
 }
 
 /// The required interface for structs representing leaves in the tree.
-pub trait Leaf<const LENGTH: usize>
-{
+pub trait Leaf<const LENGTH: usize> {
     /// Creates a new `Leaf` node.
     fn new() -> Self;
     /// Gets the associated key with this node.
@@ -117,7 +119,7 @@ pub trait Node<BranchType, LeafType, DataType, const LENGTH: usize>
 where
     BranchType: Branch<LENGTH>,
     LeafType: Leaf<LENGTH>,
-    DataType: Data
+    DataType: Data,
 {
     /// Creates a new `Node`.
     fn new(node_variant: NodeVariant<BranchType, LeafType, DataType, LENGTH>) -> Self;
@@ -136,25 +138,25 @@ where
 }
 
 /// Contains the distinguishing data from the node
+#[non_exhaustive]
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(any(feature = "use_serde",), derive(Serialize, Deserialize))]
 pub enum NodeVariant<BranchType, LeafType, DataType, const LENGTH: usize>
 where
     BranchType: Branch<LENGTH>,
     LeafType: Leaf<LENGTH>,
-    DataType: Data
+    DataType: Data,
 {
     /// Variant containing a `Branch` node.
     Branch(BranchType),
     /// Variant containing a `Leaf` node.
     Leaf(LeafType),
     /// Variant containing a `Data` node.
-    Data(DataType)
+    Data(DataType),
 }
 
 /// This trait defines the required interface for connecting a storage mechanism to the `MerkleBIT`.
-pub trait Database<const LENGTH: usize>
-{
+pub trait Database<const LENGTH: usize> {
     /// The type of node to insert into the database.
     type NodeType;
     /// The type of entry for insertion.  Primarily for convenience and tracking what goes into the database.
@@ -162,7 +164,7 @@ pub trait Database<const LENGTH: usize>
     /// Opens an existing `Database`.
     /// # Errors
     /// `Exception` generated if the `open` does not succeed.
-    fn open(path: &PathBuf) -> Result<Self, Exception>
+    fn open(path: &Path) -> Result<Self, Exception>
     where
         Self: Sized;
     /// Gets a value from the database based on the given key.
@@ -198,40 +200,57 @@ impl Encode for Vec<u8> {
     }
 }
 
+/// Alias for handling keys of data and within the tree.
 pub type Key<const LENGTH: usize> = [u8; LENGTH];
 
 impl<const LENGTH: usize> Encode for Key<LENGTH> {
+    #[inline]
     fn encode(&self) -> Result<Vec<u8>, Exception> {
         Ok(self.to_vec())
     }
 }
 
 impl<const LENGTH: usize> Decode for Key<LENGTH> {
-    fn decode(buffer: &[u8]) -> Result<Self, Exception> where
-        Self: Sized {
+    #[inline]
+    fn decode(buffer: &[u8]) -> Result<Self, Exception>
+    where
+        Self: Sized,
+    {
         return if buffer.len() > LENGTH {
-            let mut buf = [0u8; LENGTH];
+            let mut buf = [0_u8; LENGTH];
             buf.copy_from_slice(&buffer[..LENGTH]);
             Ok(buf)
         } else {
             let buf: [u8; LENGTH] = match <[u8; LENGTH]>::try_from(buffer) {
                 Ok(b) => b,
-                Err(_) => return Err(Exception::new(format!("Failed to convert buffer to length {} array", LENGTH).as_str()))
+                Err(_) => {
+                    return Err(Exception::new(
+                        format!("Failed to convert buffer to length {} array", LENGTH).as_str(),
+                    ))
+                }
             };
             Ok(buf)
-        }
+        };
     }
 }
 
+#[cfg(feature = "use_serde")]
 pub trait SerdeHelper {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer;
+    where
+        S: Serializer;
     fn deserialize<'de, D>(deserializer: D) -> Result<Self, D::Error>
-        where D: Deserializer<'de>, Self: Sized;
+    where
+        D: Deserializer<'de>,
+        Self: Sized;
 }
 
+#[cfg(feature = "use_serde")]
 impl<const LENGTH: usize> SerdeHelper for Key<LENGTH> {
-    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error> where S: Serializer {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
         let mut seq = serializer.serialize_tuple(self.len())?;
         for elem in &self[..] {
             seq.serialize_element(elem)?;
@@ -239,19 +258,29 @@ impl<const LENGTH: usize> SerdeHelper for Key<LENGTH> {
         seq.end()
     }
 
-    fn deserialize<'de, D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error> where D: Deserializer<'de>, Self: Sized {
-        let visitor = ArrayVisitor { element: PhantomData, length: PhantomData };
+    fn deserialize<'de, D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
+    where
+        D: Deserializer<'de>,
+        Self: Sized,
+    {
+        let visitor = ArrayVisitor {
+            element: PhantomData,
+            length: PhantomData,
+        };
         deserializer.deserialize_tuple(LENGTH, visitor)
     }
 }
 
+#[cfg(feature = "use_serde")]
 struct ArrayVisitor<T, const LENGTH: usize> {
     element: PhantomData<T>,
-    length: PhantomData<[usize; LENGTH]>
+    length: PhantomData<[usize; LENGTH]>,
 }
 
+#[cfg(feature = "use_serde")]
 impl<'de, T, const LENGTH: usize> Visitor<'de> for ArrayVisitor<T, LENGTH>
-    where T: Default + Copy + Deserialize<'de>
+where
+    T: Default + Copy + Deserialize<'de>,
 {
     type Value = [T; LENGTH];
 
@@ -260,11 +289,13 @@ impl<'de, T, const LENGTH: usize> Visitor<'de> for ArrayVisitor<T, LENGTH>
     }
 
     fn visit_seq<A>(self, mut seq: A) -> Result<[T; LENGTH], A::Error>
-        where A: SeqAccess<'de>
+    where
+        A: SeqAccess<'de>,
     {
         let mut arr = [T::default(); LENGTH];
         for i in 0..LENGTH {
-            arr[i] = seq.next_element()?
+            arr[i] = seq
+                .next_element()?
                 .ok_or_else(|| SerdeError::invalid_length(i, &self))?;
         }
         Ok(arr)
@@ -304,7 +335,7 @@ impl Exception {
     #[must_use]
     pub fn new(details: &str) -> Self {
         Self {
-            details: details.to_string(),
+            details: details.to_owned(),
         }
     }
 }

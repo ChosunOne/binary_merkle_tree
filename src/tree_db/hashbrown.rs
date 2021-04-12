@@ -5,21 +5,18 @@ use hashbrown::HashMap;
 use crate::traits::{Database, Exception, Key};
 use crate::tree::tree_node::TreeNode;
 
-pub struct HashDB<const LENGTH: usize>
-{
+pub struct HashDB<const LENGTH: usize> {
     map: HashMap<Key<LENGTH>, TreeNode<LENGTH>>,
 }
 
-impl<const LENGTH: usize> HashDB<LENGTH>
-{
+impl<const LENGTH: usize> HashDB<LENGTH> {
     #[inline]
     pub fn new(map: HashMap<Key<LENGTH>, TreeNode<LENGTH>>) -> Self {
         Self { map }
     }
 }
 
-impl<const LENGTH: usize> Database<LENGTH> for HashDB<LENGTH>
-{
+impl<const LENGTH: usize> Database<LENGTH> for HashDB<LENGTH> {
     type NodeType = TreeNode<LENGTH>;
     type EntryType = (Vec<u8>, TreeNode<LENGTH>);
 

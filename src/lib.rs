@@ -12,7 +12,6 @@
 #![allow(clippy::implicit_return)]
 #![allow(clippy::else_if_without_else)]
 #![allow(clippy::module_name_repetitions)]
-
 #![forbid(unsafe_code)]
 
 //! # Merkle Binary Indexed Tree
