@@ -16,7 +16,7 @@ use starling::hash_tree::HashTree;
 use starling::rocks_tree::RocksTree;
 
 #[cfg(not(any(feature = "use_rocksdb")))]
-type Tree = HashTree<[u8; KEY_LEN], Vec<u8>>;
+type Tree = HashTree<Vec<u8>, KEY_LEN>;
 
 #[cfg(feature = "use_rocksdb")]
 type Tree = RocksTree<[u8; KEY_LEN], Vec<u8>>;

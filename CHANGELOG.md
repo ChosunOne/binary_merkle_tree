@@ -1,3 +1,6 @@
+# 3.3.0
+* Update dependencies
+* Refactored to use const generics.  Trees now require a const size of key to use instead of the type of array.
 # 3.2.3
 * Update dependencies
 # 3.2.2

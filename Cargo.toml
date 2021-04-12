@@ -1,6 +1,6 @@
 [package]
 name = "starling"
-version = "3.2.3"
+version = "3.3.0"
 authors = ["Josiah Evans <chosunone@protonmail.com>"]
 description = "This tree structure is a binary merkle tree with branch compression via split indexes."
 repository = "https://github.com/ChosunOne/merkle_bit"

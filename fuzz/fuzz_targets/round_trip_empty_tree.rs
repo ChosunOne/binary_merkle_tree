@@ -6,9 +6,9 @@ fuzz_target!(|data: &[u8]| {
     // fuzzed code goes here
     let (key, value) = get_key_and_value(data);
     let mut bmt = starling::HashTree::new(16).unwrap();
-    let root = bmt.insert(None, &mut [&key], &[value]).unwrap();
-    let items = bmt.get(&root, [&mut key]).unwrap();
-    assert_eq!(items.get(&key), Some(value.clone()));
+    let root = bmt.insert(None, &mut [key], &[value.clone()]).unwrap();
+    let items = bmt.get(&root, &mut [key]).unwrap();
+    assert_eq!(items.get(&key), Some(&Some(value.clone())));
 });
 
 fn get_key_and_value(data: &[u8]) -> ([u8; 16], Vec<u8>) {
