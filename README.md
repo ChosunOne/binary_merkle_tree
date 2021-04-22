@@ -112,6 +112,7 @@ If you provide your own implementation of the traits for each component of the t
         
         // These type annotations are required to specialize the Merkle BIT
         // Check the documentation for the required trait bounds for each of these types.
+        const KEY_SIZE: usize = 32;
         let mbit = MerkleBIT<DatabaseType, 
                              BranchType, 
                              LeafType, 
@@ -119,38 +120,38 @@ If you provide your own implementation of the traits for each component of the t
                              NodeType, 
                              HasherType, 
                              ValueType,
-                             ArrayType>::from_db(db, depth);
+                             KEY_SIZE>::from_db(db, depth);
                              
-        // Keys must be of fixed size between 1 and 32 bytes long
-        let key: [u8; 32] = [0xFF; 32];
+        // Keys must be of fixed size
+        let key: [u8; KEY_SIZE] = [0xFF; KEY_SIZE];
         
         // An example value created from ValueType.  
         let value: ValueType = ValueType::new("Some value");
         
         // You can specify a previous root to add to, in this case there is no previous root
-        let root: [u8; 32] = mbit.insert(None, &mut [key], &[value])?;
+        let root: [u8; KEY_SIZE] = mbit.insert(None, &mut [key], &[value])?;
 
         // Every time an element is added or removed a new root is created.
-        let new_key: [u8; 32] = [0xEE; 32];
+        let new_key: [u8; KEY_SIZE] = [0xEE; KEY_SIZE];
         let new_value: ValueType = ValueType::new("Some new value");
-        let new_root: [u8; 32] = mbit.insert(&root, &mut [key], &[value])?;
+        let new_root: [u8; KEY_SIZE] = mbit.insert(&root, &mut [&key], &[value])?;
         
         // Retrieving the inserted value
-        let inserted_values: HashMap<&[u8], Option<ValueType>> = mbit.get(&root, &mut [key])?;
+        let inserted_values: HashMap<&[u8], Option<ValueType>> = mbit.get(&root, &mut [&key])?;
 
         // You must ensure that the root you supply matches a root where the key existed when retrieving items
         // This line will fail to find the `new_value`
         let empty_map = mbit.get(&root, &mut [new_key])?;
 
         // This line will succeed in finding values for both `key` and `new_key`
-        let inhabited_map = mbit.get(&new_root, &mut [key, new_key])?;
+        let inhabited_map = mbit.get(&new_root, &mut [&key, &new_key])?;
 
         
         // Removing a tree root
         mbit.remove(&root)?;
 
         // This line will fail to find a value for `key` but will succeed in finding the value for `new_key`
-        let partially_inhabited_map = mbit.get(&new_root, &mut [key, new_key])?;
+        let partially_inhabited_map = mbit.get(&new_root, &mut [&key, &new_key])?;
         Ok(())
     }
 ```

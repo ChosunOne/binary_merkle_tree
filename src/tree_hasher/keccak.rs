@@ -1,13 +1,9 @@
 use tiny_keccak::Hasher;
 use tiny_keccak::Keccak;
 
-use crate::traits::Array;
-
 pub struct KeccakHasher(Keccak);
 
-impl<ArrayType> crate::traits::Hasher<ArrayType> for KeccakHasher
-where
-    ArrayType: Array,
+impl<const LENGTH: usize> crate::traits::Hasher<[u8; LENGTH]> for KeccakHasher
 {
     type HashType = Self;
 
@@ -23,8 +19,8 @@ where
     }
 
     #[inline]
-    fn finalize(self) -> ArrayType {
-        let mut res = ArrayType::default();
+    fn finalize(self) -> [u8; LENGTH] {
+        let mut res = [0; LENGTH];
         self.0.finalize(res.as_mut());
         res
     }

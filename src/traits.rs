@@ -49,7 +49,7 @@ where
     }
 
     fn finalize(self) -> Key<LENGTH> {
-        let mut finalized = ArrayType::default();
+        let mut finalized = [0; LENGTH];
         let result = self.finalize();
         let mut size = finalized.as_ref().len();
         if size > result.len() {

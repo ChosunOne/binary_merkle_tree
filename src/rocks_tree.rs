@@ -19,15 +19,15 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 
 /// Internal type alias for the underlying tree.
-type Tree<ArrayType, ValueType> = MerkleBIT<
-    RocksDB<ArrayType>,
-    TreeBranch<ArrayType>,
-    TreeLeaf<ArrayType>,
+type Tree<ValueType, const LENGTH: usize> = MerkleBIT<
+    RocksDB,
+    TreeBranch<LENGTH>,
+    TreeLeaf<LENGTH>,
     TreeData,
-    TreeNode<ArrayType>,
+    TreeNode<LENGTH>,
     TreeHasher,
     ValueType,
-    ArrayType,
+    LENGTH
 >;
 
 pub struct RocksTree<ValueType, const LENGTH: usize>
@@ -49,7 +49,7 @@ where
     }
 
     #[inline]
-    pub fn from_db(db: RocksDB<LENGTH>, depth: usize) -> BinaryMerkleTreeResult<Self> {
+    pub fn from_db(db: RocksDB, depth: usize) -> BinaryMerkleTreeResult<Self> {
         let tree = MerkleBIT::from_db(db, depth)?;
         Ok(Self { tree })
     }

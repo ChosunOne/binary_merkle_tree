@@ -31,7 +31,7 @@ impl RocksDB {
 
 impl<const LENGTH: usize> Database<LENGTH> for RocksDB
 where
-    TreeNode<ArrayType>: Encode + Decode,
+    TreeNode<LENGTH>: Encode + Decode,
 {
     type NodeType = TreeNode<LENGTH>;
     type EntryType = (usize, usize);

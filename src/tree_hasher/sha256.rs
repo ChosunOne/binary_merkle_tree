@@ -4,9 +4,7 @@ use crate::traits::Array;
 
 pub struct Sha256Hasher(Sha256);
 
-impl<ArrayType> crate::traits::Hasher<ArrayType> for Sha256Hasher
-where
-    ArrayType: Array,
+impl<const LENGTH: usize> crate::traits::Hasher<[u8; LENGTH]> for Sha256Hasher
 {
     type HashType = Self;
 
@@ -22,11 +20,10 @@ where
     }
 
     #[inline]
-    fn finalize(self) -> ArrayType {
-        let mut v = ArrayType::default();
+    fn finalize(self) -> [u8; LENGTH] {
+        let mut v = [0; LENGTH];
         let value = self.0.finish();
-        let length = v.as_ref().len();
-        v.as_mut()[..length].copy_from_slice(&value[..length]);
+        v.as_mut()[..LENGTH].copy_from_slice(&value[..LENGTH]);
         v
     }
 }

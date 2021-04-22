@@ -290,8 +290,6 @@ impl<const LENGTH: usize> Decode for TreeBranch<LENGTH> {
 
 #[cfg(feature = "use_cbor")]
 impl<const LENGTH: usize> Decode for TreeBranch<LENGTH>
-where
-    ArrayType: Array + DeserializeOwned,
 {
     #[inline]
     fn decode(buffer: &[u8]) -> BinaryMerkleTreeResult<Self> {

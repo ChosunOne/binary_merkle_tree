@@ -1,13 +1,9 @@
 use blake2_rfc;
 
-use crate::traits::Array;
-
 #[derive(Clone)]
 pub struct Blake2bHasher(blake2_rfc::blake2b::Blake2b);
 
-impl<ArrayType> crate::traits::Hasher<ArrayType> for Blake2bHasher
-where
-    ArrayType: Array,
+impl<const LENGTH: usize> crate::traits::Hasher<[u8; LENGTH]> for Blake2bHasher
 {
     type HashType = Self;
 
@@ -23,9 +19,9 @@ where
     }
 
     #[inline]
-    fn finalize(self) -> ArrayType {
+    fn finalize(self) -> [u8; LENGTH] {
         let result = self.0.finalize();
-        let mut finalized = ArrayType::default();
+        let mut finalized = [0; LENGTH];
         finalized.as_mut().copy_from_slice(result.as_ref());
         finalized
     }
