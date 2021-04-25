@@ -3,7 +3,7 @@ use tiny_keccak::Keccak;
 
 pub struct KeccakHasher(Keccak);
 
-impl<const LENGTH: usize> crate::traits::Hasher<[u8; LENGTH]> for KeccakHasher
+impl<const LENGTH: usize> crate::traits::Hasher<LENGTH> for KeccakHasher
 {
     type HashType = Self;
 

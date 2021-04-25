@@ -3,7 +3,7 @@ use tiny_keccak::Sha3;
 
 pub struct Sha3Hasher(Sha3);
 
-impl<const LENGTH: usize> crate::traits::Hasher<[u8; LENGTH]> for Sha3Hasher
+impl<const LENGTH: usize> crate::traits::Hasher<LENGTH> for Sha3Hasher
 {
     type HashType = Self;
 

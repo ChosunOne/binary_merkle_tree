@@ -3,7 +3,7 @@ use blake2_rfc;
 #[derive(Clone)]
 pub struct Blake2bHasher(blake2_rfc::blake2b::Blake2b);
 
-impl<const LENGTH: usize> crate::traits::Hasher<[u8; LENGTH]> for Blake2bHasher
+impl<const LENGTH: usize> crate::traits::Hasher<LENGTH> for Blake2bHasher
 {
     type HashType = Self;
 

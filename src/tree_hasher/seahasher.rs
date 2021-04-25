@@ -1,7 +1,7 @@
 use seahash::SeaHasher;
 use std::hash::Hasher;
 
-impl<const LENGTH: usize> crate::traits::Hasher<[u8; LENGTH]> for SeaHasher
+impl<const LENGTH: usize> crate::traits::Hasher<LENGTH> for SeaHasher
 {
     type HashType = Self;
 

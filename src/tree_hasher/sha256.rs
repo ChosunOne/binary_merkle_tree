@@ -1,10 +1,8 @@
 use openssl::sha::Sha256;
 
-use crate::traits::Array;
-
 pub struct Sha256Hasher(Sha256);
 
-impl<const LENGTH: usize> crate::traits::Hasher<[u8; LENGTH]> for Sha256Hasher
+impl<const LENGTH: usize> crate::traits::Hasher<LENGTH> for Sha256Hasher
 {
     type HashType = Self;
 

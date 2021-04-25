@@ -1,7 +1,7 @@
 use fxhash::FxHasher;
 use std::hash::Hasher;
 
-impl<const LENGTH: usize> crate::traits::Hasher<[u8; LENGTH]> for FxHasher
+impl<const LENGTH: usize> crate::traits::Hasher<LENGTH> for FxHasher
 {
     type HashType = Self;
 
